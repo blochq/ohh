@@ -1,63 +1,98 @@
-import React, { forwardRef } from 'react';
+import React, { InputHTMLAttributes, forwardRef } from 'react';
+import { twMerge } from 'tailwind-merge';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
-  error?: string;
   helperText?: string;
+  error?: string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   fullWidth?: boolean;
-  startIcon?: React.ReactNode;
-  endIcon?: React.ReactNode;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      error,
-      helperText,
-      fullWidth = true,
-      className = '',
-      startIcon,
-      endIcon,
-      ...props
-    },
-    ref
-  ) => {
+  ({ 
+    label, 
+    helperText, 
+    error, 
+    leftIcon, 
+    rightIcon, 
+    className, 
+    fullWidth = true,
+    ...props 
+  }, ref) => {
+    const baseInputClasses = `
+      bg-white 
+      border 
+      rounded-md 
+      shadow-sm
+      px-3 
+      py-2 
+      text-brand-black
+      placeholder-gray-400
+      transition-colors
+      duration-200
+      focus:outline-none 
+      focus:ring-1 
+      focus:border-brand-black
+      focus:ring-brand-black
+      dark:bg-gray-800
+      dark:border-gray-700
+      dark:text-white
+      dark:placeholder-gray-500
+      dark:focus:border-white
+      dark:focus:ring-white
+      ${leftIcon ? 'pl-9' : ''}
+      ${rightIcon ? 'pr-9' : ''}
+    `;
+
+    const widthClasses = fullWidth ? 'w-full' : '';
+    const errorClasses = error 
+      ? 'border-error-500 text-error-700 focus:border-error-500 focus:ring-error-500 dark:border-error-500 dark:focus:border-error-500 dark:focus:ring-error-500' 
+      : 'border-gray-200 dark:border-gray-700';
+    const disabledClasses = props.disabled 
+      ? 'bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-gray-900 dark:text-gray-400' 
+      : '';
+
     return (
-      <div className={`${fullWidth ? 'w-full' : ''} space-y-1`}>
+      <div className={`${fullWidth ? 'w-full' : ''}`}>
         {label && (
-          <label className="block text-sm font-medium text-gray-900">
+          <label 
+            htmlFor={props.id} 
+            className="block text-sm font-medium text-brand-black dark:text-white mb-1"
+          >
             {label}
           </label>
         )}
+        
         <div className="relative">
-          {startIcon && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              {startIcon}
+          {leftIcon && (
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+              {leftIcon}
             </div>
           )}
+          
           <input
             ref={ref}
-            className={`
-              ${startIcon ? 'pl-10' : ''}
-              ${endIcon ? 'pr-10' : ''}
-              ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-black focus:border-black'}
-              block w-full shadow-sm bg-white rounded-md 
-              border py-2 px-3 text-base 
-              focus:outline-none focus:ring-1
-              disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-              ${className}
-            `}
+            className={twMerge(
+              baseInputClasses,
+              widthClasses,
+              errorClasses,
+              disabledClasses,
+              className
+            )}
             {...props}
           />
-          {endIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              {endIcon}
+          
+          {rightIcon && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+              {rightIcon}
             </div>
           )}
         </div>
-        {(error || helperText) && (
-          <p className={`text-sm ${error ? 'text-red-600' : 'text-gray-500'}`}>
+        
+        {(helperText || error) && (
+          <p className={`mt-1 text-sm ${error ? 'text-error-500 dark:text-error-400' : 'text-gray-500 dark:text-gray-400'}`}>
             {error || helperText}
           </p>
         )}

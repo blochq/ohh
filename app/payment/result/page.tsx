@@ -19,7 +19,7 @@ export default function PaymentResultPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-primary-50 p-4">
+    <div className="min-h-screen bg-white dark:bg-black p-4">
       <header className="flex justify-between items-center mb-8 pt-4">
         <Logo size="md" className="text-gradient" />
         <Link 
@@ -46,8 +46,8 @@ export default function PaymentResultPage() {
 
       <Container maxWidth="full">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-gradient">Naira Deposit Details</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl md:text-4xl font-semibold mb-2 dark:text-white">Naira Deposit Details</h1>
+          <p className="text-gray-600 dark:text-white">
             Please make your Naira deposit within {paymentDetails.expiryTime}
           </p>
         </div>
@@ -55,22 +55,22 @@ export default function PaymentResultPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Exchange Rate Card */}
           <div className="container-card md:col-span-1 shadow-md">
-            <h2 className="text-lg font-medium mb-4 text-primary-700 border-b pb-2">Exchange Rate Summary</h2>
+            <h2 className="text-lg font-medium mb-4 text-primary-700 border-b pb-2 dark:text-white  ">Exchange Rate Summary</h2>
             
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">You&apos;re sending:</span>
+                <span className="text-brand-gray dark:text-white">You&apos;re sending:</span>
                 <span className="font-medium text-lg text-primary-700">${paymentDetails.usdAmount.toLocaleString()}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Exchange rate:</span>
+                <span className="text-brand-gray dark:text-white">Exchange rate:</span>
                 <span className="font-medium">₦{paymentDetails.exchangeRate.toLocaleString()} / $1</span>
               </div>
               
               <div className="pt-3 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-800 font-medium">Naira deposit amount:</span>
+                  <span className="text-brand-gray dark:text-white font-medium">Naira deposit amount:</span>
                   <span className="font-semibold text-xl text-primary-700">₦{paymentDetails.nairaAmount.toLocaleString()}</span>
                 </div>
               </div>
@@ -80,7 +80,7 @@ export default function PaymentResultPage() {
           {/* Bank Details Card */}
           <div className="container-card md:col-span-1 card-accent shadow-md">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium text-primary-700 border-b pb-2">Bloc Account Details</h2>
+              <h2 className="text-lg font-medium text-primary-700 border-b pb-2 dark:text-white">Bloc Account Details</h2>
               <div className="badge badge-blue">
                 <div className="flex items-center">
                   <span className="w-2 h-2 bg-primary-600 rounded-full mr-1"></span>
@@ -91,17 +91,17 @@ export default function PaymentResultPage() {
             
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Bank Name</p>
+                <p className="text-sm text-brand-gray dark:text-white mb-1">Bank Name</p>
                 <p className="font-medium">{paymentDetails.blocAccount.bankName}</p>
               </div>
               
               <div>
-                <p className="text-sm text-gray-500 mb-1">Account Name</p>
+                <p className="text-sm text-brand-gray dark:text-white mb-1">Account Name</p>
                 <p className="font-medium">{paymentDetails.blocAccount.accountName}</p>
               </div>
               
               <div className="bg-primary-50 p-3 rounded-md shadow-sm">
-                <p className="text-sm text-gray-500 mb-1">Account Number</p>
+                <p className="text-sm text-brand-gray dark:text-white mb-1">Account Number</p>
                 <div className="flex justify-between items-center">
                   <p className="font-medium tracking-wider">{paymentDetails.blocAccount.accountNumber}</p>
                   <button 
@@ -131,11 +131,11 @@ export default function PaymentResultPage() {
         
         {/* Deposit Instructions */}
         <div className="container-card mb-8 shadow-md">
-          <h2 className="text-lg font-medium mb-4 text-primary-700 border-b pb-2">Next Steps</h2>
+          <h2 className="text-lg font-medium mb-4 text-primary-700 border-b pb-2 dark:text-white">Next Steps</h2>
           
           <ol className="space-y-4 text-sm md:text-base">
             <li className="flex">
-              <div className="flex-shrink-0 flex h-6 w-6 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 text-white items-center justify-center mr-3 mt-0.5 shadow-sm">
+               <div className="flex-shrink-0 flex h-6 w-6 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 text-white items-center justify-center mr-3 mt-0.5 shadow-sm">
                 <span>1</span>
               </div>
               <p>

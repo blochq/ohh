@@ -1,31 +1,64 @@
 import React from 'react';
+import { twMerge } from 'tailwind-merge';
 
 interface ContainerProps {
   children: React.ReactNode;
-  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
   className?: string;
+  padding?: boolean;
+  variant?: 'default' | 'card' | 'outlined';
 }
 
-export default function Container({
+const Container: React.FC<ContainerProps> = ({
   children,
-  maxWidth = 'lg',
+  maxWidth = 'md',
   className = '',
-}: ContainerProps) {
-  const maxWidthClasses = {
-    xs: 'max-w-xs',
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
-    full: 'max-w-full',
+  padding = true,
+  variant = 'default',
+}) => {
+  const getMaxWidthClass = () => {
+    switch (maxWidth) {
+      case 'xs':
+        return 'max-w-xs';
+      case 'sm':
+        return 'max-w-sm';
+      case 'md':
+        return 'max-w-md';
+      case 'lg':
+        return 'max-w-lg';
+      case 'xl':
+        return 'max-w-xl';
+      case 'full':
+        return 'max-w-full';
+      default:
+        return 'max-w-md';
+    }
+  };
+
+  const getVariantClass = () => {
+    switch (variant) {
+      case 'card':
+        return 'bg-white border border-gray-100 shadow-sm dark:bg-gray-900 dark:border-gray-800 rounded-lg';
+      case 'outlined':
+        return 'border border-gray-200 rounded-lg dark:border-gray-700';
+      default:
+        return '';
+    }
   };
 
   return (
-    <div
-      className={`w-full mx-auto px-4 md:px-6 lg:px-8 ${maxWidthClasses[maxWidth]} ${className}`}
+    <div 
+      className={twMerge(
+        'w-full mx-auto',
+        getMaxWidthClass(),
+        getVariantClass(),
+        padding ? 'px-4 sm:px-6 py-4 sm:py-6' : '',
+        className
+      )}
     >
       {children}
     </div>
   );
-} 
+};
+
+export default Container; 

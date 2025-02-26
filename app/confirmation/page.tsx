@@ -19,7 +19,7 @@ export default function ConfirmationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-success-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-white to-success-100 p-4 dark:from-black dark:to-success">
       <header className="flex justify-between items-center mb-8 pt-4">
         <Logo size="md" className="text-gradient" />
         <Link 
@@ -30,7 +30,7 @@ export default function ConfirmationPage() {
         </Link>
       </header>
 
-      <Container maxWidth="lg">
+      <Container maxWidth="full">
         {/* Success Animation */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-success-500 to-primary-600 mb-6 shadow-lg">
@@ -51,7 +51,7 @@ export default function ConfirmationPage() {
           </div>
           
           <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-gradient">Payment Successful!</h1>
-          <p className="text-gray-600">
+          <p className="text-brand-gray dark:text-white">
             Your international payment has been processed
           </p>
         </div>
@@ -59,16 +59,16 @@ export default function ConfirmationPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Transaction Details Card */}
           <div className="container-card card-success md:col-span-1 shadow-md">
-            <h2 className="text-lg font-medium mb-4 text-success-700 border-b pb-2">Transaction Details</h2>
+            <h2 className="text-lg font-medium mb-4 text-success-700 border-1 pb-2 dark:text-white">Transaction Details</h2>
             
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Transaction ID</span>
-                <span className="font-medium font-mono badge badge-blue">{transactionDetails.id}</span>
+                <span className="text-brand-gray dark:text-white">Transaction ID</span>
+                <span className="font-medium font-mono badge badge-blue dark:text-black">{transactionDetails.id}</span>
               </div>
               
               <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Date</span>
+                <span className="text-brand-gray dark:text-white">Date</span>
                 <span className="font-medium">
                   {new Date(transactionDetails.date).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -126,10 +126,10 @@ export default function ConfirmationPage() {
                 <Button 
                   variant="secondary" 
                   fullWidth
-                  className="flex items-center justify-center hover-lift shadow-sm"
+                  className="flex items-center justify-center hover-lift shadow-sm bg-black dark:bg-white text-white dark:text-black"
                 >
                   <svg 
-                    className="w-5 h-5 mr-2 text-primary-600" 
+                    className="w-5 h-5 mr-2  text-white dark:text-black" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24" 
@@ -148,10 +148,10 @@ export default function ConfirmationPage() {
                 <Button 
                   variant="secondary" 
                   fullWidth
-                  className="flex items-center justify-center hover-lift shadow-sm"
+                  className="flex items-center justify-center hover-lift shadow-sm bg-white dark:bg-brand-black text-brand-gray dark:text-white "
                 >
                   <svg 
-                    className="w-5 h-5 mr-2 text-primary-600" 
+                    className="w-5 h-5 mr-2 text-brand-gray dark:text-white" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24" 

@@ -1,26 +1,40 @@
 import React from 'react';
+import { twMerge } from 'tailwind-merge';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   fullPage?: boolean;
+  label?: string;
 }
 
-export default function LoadingSpinner({
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   className = '',
   fullPage = false,
-}: LoadingSpinnerProps) {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12',
+  label = 'Loading...',
+}) => {
+  const getSizeClass = () => {
+    switch (size) {
+      case 'sm':
+        return 'h-4 w-4';
+      case 'md':
+        return 'h-8 w-8';
+      case 'lg':
+        return 'h-12 w-12';
+      default:
+        return 'h-8 w-8';
+    }
   };
 
-  const spinner = (
-    <div className={`${className}`} role="status">
+  const spinnerContent = (
+    <>
       <svg
-        className={`animate-spin ${sizeClasses[size]} text-gray-300`}
+        className={twMerge(
+          'animate-spin text-primary-600',
+          getSizeClass(),
+          className
+        )}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -32,24 +46,30 @@ export default function LoadingSpinner({
           r="10"
           stroke="currentColor"
           strokeWidth="4"
-        ></circle>
+        />
         <path
           className="opacity-75"
           fill="currentColor"
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
+        />
       </svg>
-      <span className="sr-only">Loading...</span>
-    </div>
+      {label && <span className="mt-2 text-sm text-gray-600">{label}</span>}
+    </>
   );
 
   if (fullPage) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
-        {spinner}
+      <div className="fixed inset-0 bg-white bg-opacity-75 flex flex-col items-center justify-center z-50">
+        {spinnerContent}
       </div>
     );
   }
 
-  return spinner;
-} 
+  return (
+    <div className="flex flex-col items-center justify-center p-4">
+      {spinnerContent}
+    </div>
+  );
+};
+
+export default LoadingSpinner; 

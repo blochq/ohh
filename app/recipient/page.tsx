@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 export default function RecipientPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-4">
+    <div className="min-h-screen bg-white dark:bg-black p-4">
       <header className="flex justify-between items-center mb-8 pt-4">
         <Logo size="md" className="text-gradient" />
         <Link 
@@ -32,10 +32,10 @@ export default function RecipientPage() {
         </Link>
       </header>
 
-      <Container maxWidth="lg">
+      <Container maxWidth="full">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-gradient">Recipient Details</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl md:text-4xl font-semibold mb-2  dark:text-white">Recipient Details</h1>
+          <p className="text-gray-600 dark:text-white">
             Enter the bank account details of your recipient
           </p>
         </div>
@@ -48,7 +48,7 @@ export default function RecipientPage() {
                 <div className="w-full bg-primary-500 h-1 rounded-full"></div>
               </div>
               <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-700 rounded-full text-white flex items-center justify-center text-sm font-medium shadow-md">
+                <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-700 rounded-full text-white dark:text-black flex items-center justify-center text-sm font-medium shadow-md">
                   3
                 </div>
                 <div className="mt-2 text-xs text-primary-700 text-center font-medium">
@@ -76,6 +76,7 @@ export default function RecipientPage() {
                       name="firstName"
                       type="text"
                       required
+                      className=' bg-white dark:bg-brand-black'
                       placeholder="Enter first name"
                     />
                     
@@ -85,6 +86,7 @@ export default function RecipientPage() {
                       name="lastName"
                       type="text"
                       required
+                      className=' bg-white dark:bg-brand-black'
                       placeholder="Enter last name"
                     />
                   </div>
@@ -94,7 +96,8 @@ export default function RecipientPage() {
                     id="email"
                     name="email"
                     type="email"
-                    required
+                      required
+                    className=' bg-white dark:bg-brand-black'
                     placeholder="recipient@example.com"
                   />
                   
@@ -105,7 +108,7 @@ export default function RecipientPage() {
                     <select
                       id="purpose"
                       name="purpose"
-                      className="input-field py-3 text-base"
+                      className="input-field py-3 text-base bg-white dark:bg-brand-black"
                       required
                     >
                       <option value="" disabled selected>Select purpose</option>
@@ -136,7 +139,7 @@ export default function RecipientPage() {
                     <select
                       id="bankName"
                       name="bankName"
-                      className="input-field py-3 text-base"
+                      className="input-field py-3 text-base bg-white dark:bg-brand-black"
                       required
                     >
                       <option value="" disabled selected>Select bank</option>
@@ -156,7 +159,7 @@ export default function RecipientPage() {
                       <select
                         id="accountType"
                         name="accountType"
-                        className="input-field py-3 text-base"
+                        className="input-field py-3 text-base bg-white dark:bg-brand-black"
                         required
                       >
                         <option value="" disabled selected>Select type</option>
@@ -173,6 +176,7 @@ export default function RecipientPage() {
                       required
                       placeholder="9 digits"
                       pattern="[0-9]{9}"
+                      className=' bg-white dark:bg-brand-black'
                     />
                   </div>
                   
@@ -183,6 +187,7 @@ export default function RecipientPage() {
                     type="text"
                     required
                     placeholder="Enter account number"
+                    className=' bg-white dark:bg-brand-black'
                   />
                   
                   <Input
@@ -192,6 +197,7 @@ export default function RecipientPage() {
                     type="text"
                     required
                     placeholder="Re-enter account number"
+                    className=' bg-white dark:bg-brand-black'
                   />
                 </fieldset>
               </div>
@@ -204,12 +210,12 @@ export default function RecipientPage() {
                     id="terms"
                     name="terms"
                     type="checkbox"
-                    className="focus:ring-primary-500 h-5 w-5 text-primary-600 border-gray-300 rounded"
+                    className="focus:ring-primary-500 h-5 w-5 text-primary-600 border-gray-300 rounded bg-white dark:bg-brand-black"
                     required
                   />
                 </div>
                 <div className="ml-3 text-sm">
-                  <label htmlFor="terms" className="font-medium text-gray-700">
+                  <label htmlFor="terms" className="font-medium text-gray-700 dark:text-white">
                     I confirm that these details are correct
                   </label>
                   <p className="text-gray-500">
@@ -217,13 +223,13 @@ export default function RecipientPage() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
                 <Link href="/payment/result">
                   <Button
                     type="button"
                     variant="secondary"
-                    className="w-full sm:w-auto hover-lift"
+                    className="w-full sm:w-auto hover-lift bg-white dark:bg-brand-black text-brand-gray dark:text-white"
                   >
                     Back
                   </Button>
