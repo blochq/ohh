@@ -2,35 +2,12 @@ import React from 'react';
 import Container from '../components/Container';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import Logo from '../components/Logo';
 import Link from 'next/link';
 
 export default function RecipientPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-black p-4">
-      <header className="flex justify-between items-center mb-8 pt-4">
-        <Logo size="md" className="text-gradient" />
-        <Link 
-          href="/payment/result" 
-          className="text-sm text-primary-600 hover:text-primary-800 hover:underline flex items-center transition-colors"
-        >
-          <svg 
-            className="w-4 h-4 mr-1" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M10 19l-7-7m0 0l7-7m-7 7h18" 
-            />
-          </svg>
-          Back
-        </Link>
-      </header>
+
 
       <Container maxWidth="full">
         <div className="mb-8 text-center">

@@ -1,6 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next/types";
 import "./globals.css";
+import "./styles/animations.css";
 import ThemeProvider from "./providers/ThemeProvider";
+import PageTransitions from "./components/PageTransitions";
+import Header from "./components/Header";
 
 export const metadata: Metadata = {
   title: "Ohh.tc - International Payments Platform",
@@ -14,9 +17,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-white text-brand-black dark:bg-brand-black dark:text-white antialiased">
+      <body className="min-h-screen bg-white text-black dark:bg-black dark:text-white antialiased">
         <ThemeProvider>
-          {children}
+          <PageTransitions>
+            <div className="p-4">
+              <Header />
+              {children}
+            </div>
+          </PageTransitions>
         </ThemeProvider>
       </body>
     </html>

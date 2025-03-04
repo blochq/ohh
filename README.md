@@ -1,77 +1,105 @@
-# Ohh.tc - International Payments Platform
+# Payment Platform
 
-A modern, minimalist black & white mobile-first platform enabling users to send dollars internationally using Naira.
+A modern payment platform for international transfers with user authentication, KYC verification, and payment processing.
 
 ## Features
 
-- **Responsive Design**: Optimized for all screen sizes from mobile to desktop
-- **Mobile-First Approach**: Designed for mobile devices first, then enhanced for larger screens
-- **Minimalist Black & White UI**: Clean, uncluttered interface with strategic use of white space
-- **Intuitive User Flow**: Guided process for international payments
-- **Secure Payment Process**: Step-by-step verification and confirmation
+### Authentication
+- User registration and login
+- Email verification with OTP
+- Profile management
 
-## Responsive Layout Features
+### Onboarding
+- Multi-step onboarding process
+- Personal information collection
+- Address verification
+- Phone verification
 
-- **Adaptive Content Layout**: Content organization changes based on screen size
-- **Multi-column Layout on Larger Screens**: Better use of screen real estate on tablets and desktops
-- **Consistent Typography System**: Text scales appropriately across all device sizes
-- **Optimized Touch Targets**: Larger interactive elements for mobile and touch devices
-- **Fluid Grids**: Layout adjusts dynamically to available space
+### KYC (Know Your Customer)
+- Document upload (passport, ID card, driver's license)
+- Selfie with document verification
+- KYC status tracking
 
-## Screens
+### Payments
+- Currency conversion
+- Collection account generation
+- Payment verification
+- Beneficiary management
+- Payout initiation
+- Transaction history
 
-1. **Login Screen**: Simple, elegant login form
-2. **Dashboard**: Prominent "Send International Payment" CTA and transaction history
-3. **Payment Input**: Clean numeric input for dollar amount and country selection
-4. **Naira Equivalent & Deposit**: Clear display of exchange rate and deposit instructions
-5. **Recipient's Account Details**: Streamlined form for recipient information
-6. **Confirmation**: Transaction summary and receipt options
+## API Endpoints
 
-## Tech Stack
+### Authentication APIs
+- `POST /v1/users/register` - Register a new user
+- `POST /v1/users/verify-email` - Verify user email with OTP
+- `POST /v1/users/resend-verification` - Resend verification code
+- `POST /v1/users/login` - User login
+- `GET /v1/users/profile` - Get user profile
+- `PUT /v1/users/profile` - Update user profile
+
+### KYC APIs
+- `POST /v1/kyc/documents` - Upload KYC documents
+- `GET /v1/kyc/status` - Check KYC verification status
+- `POST /v1/kyc/verify` - Submit KYC verification data
+
+### Payment APIs
+- `POST /v1/auth` - Authentication for payment APIs
+- `POST /v1/conversions` - Calculate currency conversion
+- `POST /v1/collection-accounts` - Generate collection account
+- `POST /v1/payment-verification` - Verify payment
+- `POST /v1/beneficiaries` - Create beneficiary
+- `POST /v1/payouts` - Initiate payout
+- `GET /v1/transactions` - Get transaction history
+- `GET /v1/transactions/:id` - Get transaction details
+
+## Pages
+
+### Authentication Pages
+- `/auth/signup` - User registration
+- `/auth/verify-email` - Email verification
+- `/auth/login` - User login
+
+### Onboarding Pages
+- `/onboarding` - Multi-step onboarding process
+
+### KYC Pages
+- `/kyc` - Document upload and verification
+
+### Payment Pages
+- `/payment` - Payment initiation
+- `/payment/collection-account` - Collection account details
+- `/payment/verify` - Payment verification
+
+### Dashboard Pages
+- `/dashboard` - User dashboard
+- `/transactions` - Transaction history
+- `/transactions/:id` - Transaction details
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Set up environment variables in `.env.local`
+4. Run the development server with `npm run dev`
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Environment Variables
+
+Create a `.env.local` file with the following variables:
+
+```
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
+```
+
+## Technologies Used
 
 - Next.js
 - TypeScript
 - Tailwind CSS
-- React
+- React Hooks
+- Fetch API
 
-## Getting Started
+## Conclusion
 
-### Prerequisites
-
-- Node.js 14.6.0 or newer
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/ohh-tc.git
-   cd ohh-tc
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn
-   ```
-
-3. Run the development server:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## Design Principles
-
-- **Typography**: Sans-serif typeface with strategic weight variations
-- **Color Palette**: Pure white and rich black with grayscale variations
-- **UI Components**: Consistent, minimal styling with subtle transitions
-- **White Space**: Strategic use to create focus and reduce cognitive load
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+This payment platform provides a complete solution for international money transfers with a focus on security and user experience. The application includes a comprehensive user journey from registration and KYC verification to payment processing and transaction tracking. The modular architecture allows for easy maintenance and future enhancements.

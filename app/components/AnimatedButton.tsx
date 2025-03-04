@@ -3,7 +3,7 @@
 import React, { ButtonHTMLAttributes } from 'react';
 import { motion } from 'framer-motion';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface AnimatedButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'text';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
@@ -11,11 +11,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loadingText?: string;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
-  animateHover?: boolean;
-  animateScale?: boolean;
 }
 
-export default function Button({
+export default function AnimatedButton({
   children,
   className = '',
   variant = 'primary',
@@ -25,20 +23,26 @@ export default function Button({
   loadingText,
   icon,
   iconPosition = 'left',
-  animateHover = true,
-  animateScale = true,
   ...props
-}: ButtonProps) {
-  // Base classes
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md focus:outline-none transition-colors';
-  
+}: AnimatedButtonProps) {
+  // Button animation variants
+  const buttonVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+    hover: { scale: 1.02, transition: { duration: 0.2 } },
+    tap: { scale: 0.98, transition: { duration: 0.1 } }
+  };
+
   // Size classes
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2 text-base',
     lg: 'px-6 py-3 text-lg'
   };
-  
+
+  // Base classes
+  const baseClasses = 'rounded-md font-medium shadow-sm focus:outline-none transition-all flex items-center justify-center';
+
   // Variant classes
   const variantClasses = {
     primary: 'bg-brand-black text-white dark:bg-white dark:text-brand-black hover:bg-brand-blue-gray hover:text-white dark:hover:bg-brand-blue-gray dark:hover:text-white',
@@ -46,36 +50,30 @@ export default function Button({
     outline: 'bg-transparent border border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
     text: 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
   };
-  
+
   // Width classes
   const widthClasses = fullWidth ? 'w-full' : '';
-  
+
   // Disabled classes
   const disabledClasses = props.disabled ? 'opacity-60 cursor-not-allowed' : '';
-  
-  // Animation classes
-  const animationClasses = animateHover ? 'button-hover' : '';
-  
+
   // Combine all classes
-  const buttonClasses = `${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${widthClasses} ${disabledClasses} ${animationClasses} ${className}`;
-  
-  // Animation variants
-  const buttonVariants = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-    hover: animateHover ? { scale: 1.05, transition: { duration: 0.2 } } : {},
-    tap: animateScale ? { scale: 0.95, transition: { duration: 0.1 } } : {},
-  };
-  
+  const buttonClasses = `${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${widthClasses} ${disabledClasses} ${className}`;
+
+  // Extract HTML props that conflict with Framer Motion's motion.button props
+  // We need to remove these to avoid type conflicts
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { onDrag, onDragStart, onDragEnd, onAnimationStart, onAnimationComplete, ...safeProps } = props;
+
   return (
     <motion.button
       className={buttonClasses}
-      initial="initial"
-      animate="animate"
+      initial="hidden"
+      animate="visible"
       whileHover="hover"
       whileTap="tap"
       variants={buttonVariants}
-      {...props}
+      {...safeProps}
     >
       {isLoading ? (
         <>

@@ -1,7 +1,6 @@
 import React from 'react';
 import Container from '../components/Container';
 import Button from '../components/Button';
-import Logo from '../components/Logo';
 import Link from 'next/link';
 
 export default function ConfirmationPage() {
@@ -20,15 +19,6 @@ export default function ConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-success-100 p-4 dark:from-black dark:to-success">
-      <header className="flex justify-between items-center mb-8 pt-4">
-        <Logo size="md" className="text-gradient" />
-        <Link 
-          href="/dashboard" 
-          className="text-sm text-primary-600 hover:text-primary-800 hover:underline transition-colors"
-        >
-          Go to Dashboard
-        </Link>
-      </header>
 
       <Container maxWidth="full">
         {/* Success Animation */}
