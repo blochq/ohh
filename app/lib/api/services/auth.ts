@@ -82,7 +82,7 @@ const authService = {
    */
   async registerUser(userData: RegisterUserData): Promise<RegisterResponse> {
     return apiRequest<RegisterResponse>({
-      endpoint: '/v1/users/register',
+      endpoint: '/v1/customers/',
       method: 'POST',
       body: userData as unknown as Record<string, unknown>,
       requiresAuth: false
@@ -94,7 +94,7 @@ const authService = {
    */
   async verifyEmail(verifyData: VerifyEmailData): Promise<VerifyEmailResponse> {
     return apiRequest<VerifyEmailResponse>({
-      endpoint: '/v1/users/verify-email',
+      endpoint: '/v1/customers/verify-email',
       method: 'POST',
       body: verifyData as unknown as Record<string, unknown>,
       requiresAuth: false

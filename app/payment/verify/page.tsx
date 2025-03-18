@@ -16,7 +16,7 @@ export default function VerifyPaymentPage() {
   const [verificationData, setVerificationData] = useState<PaymentVerificationResponse['data'] | null>(null);
   
   useEffect(() => {
-    // Get account data from session storage
+
     const storedAccountData = sessionStorage.getItem('accountData');
     const storedConversionData = sessionStorage.getItem('conversionData');
     

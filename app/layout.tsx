@@ -1,8 +1,9 @@
 import type { Metadata } from "next/types";
 import "./globals.css";
 import "./styles/animations.css";
+import { Toaster } from "sonner";
 import ThemeProvider from "./providers/ThemeProvider";
-import PageTransitions from "./components/PageTransitions";
+import ReactQueryProvider from "./providers/ReactQueryProvider";
 import Header from "./components/Header";
 
 export const metadata: Metadata = {
@@ -18,14 +19,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-white text-black dark:bg-black dark:text-white antialiased">
-        <ThemeProvider>
-          <PageTransitions>
+        <ReactQueryProvider>
+          <ThemeProvider>
             <div className="p-4">
               <Header />
               {children}
             </div>
-          </PageTransitions>
-        </ThemeProvider>
+            <Toaster />
+          </ThemeProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );
