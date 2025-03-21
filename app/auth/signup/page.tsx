@@ -7,8 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
-import { createAddress } from '../../lib/api-calls';
-import { SignupFormData, signupSchema } from '@/app/lib/dto';
+import { createCustomer } from '@/lib/api-calls';
+import { SignupFormData, signupSchema } from '@/lib/dto';
 import { Input } from '@/components/ui/input';
 
 export default function SignUpPage() {
@@ -31,7 +31,7 @@ export default function SignUpPage() {
   const formValues = watch();
   
   const mutation = useMutation({
-    mutationFn: createAddress,
+    mutationFn: createCustomer,
     onSuccess: (response) => {
       console.log("response", response);
       if (response.data?.success) {

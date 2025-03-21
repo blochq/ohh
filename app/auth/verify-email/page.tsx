@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import AnimatedLayout from '../../components/AnimatedLayout';
 import AnimatedButton from '../../components/AnimatedButton';
-import { containerVariants, itemVariants, scaleVariants } from '../../lib/utils/transitions';
-import authService from '../../lib/api/services/auth';
+import { containerVariants, itemVariants, scaleVariants } from '../../../lib/utils/transitions';
+import authService from '../../../lib/api/services/auth';
 
 export default function VerifyEmailPage() {
   const router = useRouter();

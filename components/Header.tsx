@@ -3,9 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
 import { twMerge } from 'tailwind-merge';
+import Logo from './Logo';
 
 interface HeaderProps {
   className?: string;

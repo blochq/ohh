@@ -7,8 +7,8 @@ import { useMutation } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { login } from '../../lib/api-calls';
-import { loginSchema, type LoginFormData } from '../../lib/dto';
+import { login } from '../../../lib/api-calls';
+import { loginSchema, type LoginFormData } from '../../../lib/dto';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { IValidationError } from '@/lib/models';
 
 
 export default function LoginPage() {
@@ -39,7 +40,7 @@ export default function LoginPage() {
     mutationFn: (data: LoginFormData) => login(data),
     onSuccess: (response) => {
       if (response.data?.success) {
-        localStorage.setItem('authToken', response.data.token);
+        sessionStorage.setItem('authToken', response.data.token);
         toast.success('Login successful! ');
         
         
@@ -47,7 +48,7 @@ export default function LoginPage() {
           router.push('/dashboard');
         }, 1500);
       } else if (response.validationErrors) {
-        response.validationErrors.forEach((error) => {
+        response.validationErrors.forEach((error :IValidationError) => {
           form.setError(error.field as keyof LoginFormData, {
             message: error.message,
           });
@@ -132,14 +133,7 @@ export default function LoginPage() {
             </form>
           </Form>
           
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don&apos;t have an account?{' '}
-              <Link href="/auth/signup" className="text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light">
-                Sign up
-              </Link>
-            </p>
-          </div>
+         
         </div>
       </div>
     </div>
