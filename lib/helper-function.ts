@@ -1,6 +1,6 @@
 export const getAuthToken = (): string => {
     const token = typeof window !== 'undefined' 
-      ? sessionStorage.getItem('authToken') || '' 
+      ? sessionStorage.getItem('token') || '' 
       : '';
    
     return token;

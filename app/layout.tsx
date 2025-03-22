@@ -6,6 +6,7 @@ import ThemeProvider from "@/providers/ThemeProvider";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
 import { PaymentProvider } from "@/context/payment-context";
 import Header from "@/components/Header";
+import { SessionProvider } from "@/context/session-context";
 
 export const metadata: Metadata = {
   title: "Ohh.tc - International Payments Platform",
@@ -23,10 +24,12 @@ export default function RootLayout({
         <ReactQueryProvider>
           <ThemeProvider>
             <PaymentProvider>
+              <SessionProvider>
               <div className="p-4">
                 <Header />
                 {children}
               </div>
+              </SessionProvider>
             </PaymentProvider>
             <Toaster />
           </ThemeProvider>

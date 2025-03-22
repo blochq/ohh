@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { toast } from 'sonner';
 
 import {
@@ -61,26 +60,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createUser, createCustomer } from '@/lib/api-calls';
 import { getAuthToken } from '@/lib/helper-function';
 import { Plus, UserRound, Users, Loader2, Search, RefreshCw } from 'lucide-react';
+import { CreateUserFormData, createUserSchema, SignupFormData, signupSchema } from '@/lib/dto';
 
-// Form schemas
-const createUserSchema = z.object({
-  Email: z.string().email('Please enter a valid email'),
-  full_name: z.string().min(3, 'Full name must be at least 3 characters'),
-  Password: z.string().min(8, 'Password must be at least 8 characters'),
-  organization_name: z.string().min(1, 'Organization name is required')
-});
 
-const createCustomerSchema = z.object({
-  First_name: z.string().min(1, 'First name is required'),
-  Last_name: z.string().min(1, 'Last name is required'),
-  Email: z.string().email('Please enter a valid email'),
-  Phone_number: z.string().optional(),
-  Password: z.string().min(8, 'Password must be at least 8 characters'),
-  Customer_type: z.string().min(1, 'Customer type is required')
-});
-
-type CreateUserFormValues = z.infer<typeof createUserSchema>;
-type CreateCustomerFormValues = z.infer<typeof createCustomerSchema>;
 
 // Mock data for demonstration
 const mockUserData = {
@@ -173,8 +155,8 @@ export default function UserManagement() {
     enabled: !!customerId
   });
 
-  // Form setup for creating a user
-  const userForm = useForm<CreateUserFormValues>({
+
+  const userForm = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       Email: '',
@@ -184,22 +166,22 @@ export default function UserManagement() {
     }
   });
 
-  // Form setup for creating a customer
-  const customerForm = useForm<CreateCustomerFormValues>({
-    resolver: zodResolver(createCustomerSchema),
+
+  const customerForm = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       First_name: '',
       Last_name: '',
       Email: '',
       Phone_number: '',
       Password: '',
-      Customer_type: 'Individual'
+      Customer_type: 'personal'
     }
   });
 
   // Mutation for creating a user
   const createUserMutation = useMutation({
-    mutationFn: async (data: CreateUserFormValues) => {
+    mutationFn: async (data: CreateUserFormData) => {
       const token = getAuthToken();
       if (!token) throw new Error('Authentication required');
       
@@ -214,7 +196,7 @@ export default function UserManagement() {
       toast.success('User created successfully');
       setOpenUserDialog(false);
       userForm.reset();
-      // Invalidate queries to refresh data
+   
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
@@ -228,7 +210,7 @@ export default function UserManagement() {
 
   // Mutation for creating a customer
   const createCustomerMutation = useMutation({
-    mutationFn: async (data: CreateCustomerFormValues) => {
+    mutationFn: async (data: SignupFormData) => {
       const response = await createCustomer(data);
       if (response.error) throw new Error(response.error.message);
       if (response.validationErrors && response.validationErrors.length > 0) {
@@ -240,7 +222,7 @@ export default function UserManagement() {
       toast.success('Customer created successfully');
       setOpenCustomerDialog(false);
       customerForm.reset();
-      // Invalidate queries to refresh data
+     
       queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error) => {
@@ -252,13 +234,12 @@ export default function UserManagement() {
     }
   });
 
-  // Handle user form submission
-  const onSubmitUserForm = (data: CreateUserFormValues) => {
+  const onSubmitUserForm = (data: CreateUserFormData) => {
     createUserMutation.mutate(data);
   };
 
-  // Handle customer form submission
-  const onSubmitCustomerForm = (data: CreateCustomerFormValues) => {
+
+  const onSubmitCustomerForm = (data: SignupFormData) => {
     createCustomerMutation.mutate(data);
   };
 

@@ -257,23 +257,41 @@ export interface AuthResponse {
       }
 
 export interface IUser {
-  id: string;
-  full_name: string;
-  phone_number: string;
-  organization_id: string;
-  email: string;
-  country: string;
-  group: string;
-  status: string;
+  _id: string;
   created_at: string;
+  last_login: string;
   updated_at: string;
-  first_name: string;
-  last_name: string;
-  kyc_tier: string;
-  date_of_birth: string;
-  customer_type: string;
-  source: string;
-  address: {
+  email: string;
+  user_type: string;
+  full_name: string;
+  phone_number?: string;
+  organization_id: string;
+  organizations: IUserOrganization[];
+  organization: IOrganization;
+  meta_data: null | unknown;
+  verified: boolean;
+  access_code: string;
+  operator_account_id: string;
+  operator_type: string;
+  accepted_terms: boolean;
+  guide: IUserGuide;
+  verified_mail: boolean;
+  product_use_case?: string;
+  distributor_name?: string;
+  secure_pin: Record<string, unknown>;
+  has_pin: boolean;
+  device_token?: string;
+  id?: string;
+  first_name?: string;
+  last_name?: string;
+  country?: string;
+  group?: string;
+  status?: string;
+  kyc_tier?: string;
+  date_of_birth?: string;
+  customer_type?: string;
+  source?: string;
+  address?: {
     street: string;
   };
 }
@@ -282,6 +300,7 @@ export interface ICreateUserResponse {
   success: boolean;
   data: IUser;
   message: string;
+  token: string;
 }
 
 export interface IOrganizationPermissionConfig {

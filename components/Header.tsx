@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
 import { twMerge } from 'tailwind-merge';
 import Logo from './Logo';
+import { useSession } from '@/context/session-context';
 
 interface HeaderProps {
   className?: string;
@@ -13,9 +14,9 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const pathname = usePathname();
-  
-  // Don't show navigation on auth pages
+
   const isAuthPage = pathname.startsWith('/auth');
+  const {userType,  userName} = useSession();
   
   return (
     <header className={twMerge("flex justify-between items-center mb-8 pt-4", className)}>
@@ -64,16 +65,29 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
             >
               Send Money
             </Link>
+            {userType === 'user' || userType === 'owner' && (
+            <Link 
+              href="/user-management" 
+              className={`text-sm font-medium transition-colors ${
+                pathname.startsWith('/user-management') 
+                  ? 'text-brand-blue dark:text-brand-blue-light' 
+                  : 'text-gray-600 hover:text-brand-blue dark:text-gray-300 dark:hover:text-brand-blue-light'
+              }`}
+            >
+              Manage Users
+            </Link>
+            )}
           </nav>
         )}
         
         {!isAuthPage && (
           <div className="hidden md:flex items-center mr-4">
-            <div className="text-sm text-brand-gray dark:text-gray-300 mr-4">Welcome, User</div>
+            <div className="text-sm text-brand-gray dark:text-gray-300 mr-4">Welcome, {userName}</div>
             <Link 
               href="/auth/login" 
               className="text-sm text-brand-blue-gray hover:text-brand-gray transition-colors dark:text-gray-400 dark:hover:text-white"
             >
+              
               Sign Out
             </Link>
           </div>

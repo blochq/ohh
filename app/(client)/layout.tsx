@@ -1,5 +1,6 @@
 'use client';
 
+
 import { getAuthToken } from "@/lib/helper-function";
 import { notFound } from "next/navigation";
 
@@ -8,10 +9,11 @@ export default function Layout({
 }: {
     children: React.ReactNode;
 }) {
-    const token = getAuthToken();
-    if (!token) {
-        return notFound();
-    }
+const token = getAuthToken();
+
+if(!token){
+    return notFound();
+}
     return (
         <div>
         
