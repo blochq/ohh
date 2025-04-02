@@ -89,7 +89,7 @@ A modern payment platform for international transfers with user authentication, 
 Create a `.env.local` file with the following variables:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=https://api.example.com
+NEXT_API_BASE_URL=https://api.example.com
 ```
 
 ## Technologies Used
