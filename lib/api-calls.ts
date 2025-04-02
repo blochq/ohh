@@ -179,6 +179,7 @@ export const getTransferFee = async (input: z.infer<typeof getTransferFeeSchema>
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${input.token}`,
+      
     },
   }));
 };
