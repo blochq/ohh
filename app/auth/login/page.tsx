@@ -1,208 +1,151 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Container from '../../components/Container';
-import Button from '../../components/Button';
-import { authService } from '../../lib/api/services';
+import { useMutation } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { login } from '../../../lib/api-calls';
+import { loginSchema, type LoginFormData } from '../../../lib/dto';
 
-// Define the LoginData interface since it's not exported from services
-interface LoginData {
-  email: string;
-  password: string;
-}
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { IValidationError } from '@/lib/models';
+import { useSession } from '@/context/session-context';
 
-interface LoginFormData extends LoginData {
-  rememberMe: boolean;
-}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
-    password: '',
-    rememberMe: false
+  const { refreshSession } = useSession();
+
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+
+
+    },
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+  const loginMutation = useMutation({
+    mutationFn: (data: LoginFormData) => login(data),
+    onSuccess: (response) => {
 
-    // Clear error when user types
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: ''
-      });
-    }
-  };
+      if (response.data?.success) {
+        toast.success('Login successful! ');
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-    
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setIsLoading(true);
-    setServerError(null);
-    setSuccessMessage(null);
-    
-    try {
-      const response = await authService.login(formData.email, formData.password);
-      
-      // Check if login was successful
-      if (response.success && response.token) {
-        // Show success message
-        setSuccessMessage('Login successful! Redirecting to dashboard...');
+        sessionStorage.setItem('token', response.data.token);
+        sessionStorage.setItem('userEmail', response.data.data.email);
+        sessionStorage.setItem('userName', response.data.data.full_name);
+        sessionStorage.setItem('userId', response.data.data._id);
+        sessionStorage.setItem('userType', response.data.data.user_type);
+        sessionStorage.setItem('organizationId', response.data.data.organization_id);
         
-        // Redirect to dashboard after a short delay to show the success message
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
-      } else {
-        setServerError(response.message || 'Login failed. Please check your credentials and try again.');
+        console.log(response.data.data);
+
+        refreshSession();
+        
+        router.push('/dashboard');
+      } else if (response.validationErrors) {
+        response.validationErrors.forEach((error :IValidationError) => {
+          form.setError(error.field as keyof LoginFormData, {
+            message: error.message,
+          });
+        });
+      } else if (response.error) {
+        toast.error(response.error.message || 'Login failed. Please try again.');
       }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please check your credentials and try again.';
-      setServerError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+    },
+    onError: () => {
+      toast.error('An unexpected error occurred. Please try again.');
+    },
+  });
+
+  const onSubmit = (data: LoginFormData) => {
+    loginMutation.mutate(data);
   };
 
   return (
     <div className="min-h-screen bg-white dark:bg-black p-4">
-      <Container maxWidth="sm">
+      <div className="max-w-md mx-auto min-h-screen">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-gradient">Welcome Back</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold mb-2 bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
+            Welcome Back
+          </h1>
           <p className="text-gray-600 dark:text-gray-300">Sign in to your account</p>
         </div>
         
-        <div className="container-card border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700 shadow-md">
-          {serverError && (
-            <div className="bg-error-100 text-error-700 p-3 rounded-md mb-6 dark:bg-error-700 dark:bg-opacity-20 dark:text-error-500">
-              {serverError}
-            </div>
-          )}
-          
-          {successMessage && (
-            <div className="bg-success-100 text-success-700 p-3 rounded-md mb-6 dark:bg-success-700 dark:bg-opacity-20 dark:text-success-500 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              {successMessage}
-            </div>
-          )}
-          
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
+        <div className="container-card min-h-xl border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700 shadow-md p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
                 name="email"
-                className={`input-field py-3 text-base shadow-sm dark:bg-gray-900 dark:border-gray-800 dark:text-white w-full ${
-                  errors.email ? 'border-error-500 dark:border-error-500' : ''
-                }`}
-                placeholder="john.doe@example.com"
-                value={formData.email}
-                onChange={handleChange}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="john.doe@example.com" 
+                        type="email" 
+                        className="border-gray-200 dark:border-gray-800 focus:border-gray-900 dark:focus:border-gray-100"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-error-600 dark:text-error-500">{errors.email}</p>
-              )}
-            </div>
-            
-            <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
-                  Password
-                </label>
-                <Link href="/auth/forgot-password" className="text-sm text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light">
-                  Forgot password?
-                </Link>
-              </div>
-              <input
-                type="password"
-                id="password"
+
+              <FormField
+                control={form.control}
                 name="password"
-                className={`input-field py-3 text-base shadow-sm dark:bg-gray-900 dark:border-gray-800 dark:text-white w-full ${
-                  errors.password ? 'border-error-500 dark:border-error-500' : ''
-                }`}
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Password</FormLabel>
+                      <Link 
+                        href="/auth/forgot-password" 
+                        className="text-sm text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <FormControl>
+                      <Input 
+                        placeholder="••••••••" 
+                        type="password"
+                        className="border-gray-200 dark:border-gray-800 focus:border-gray-900 dark:focus:border-gray-100"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.password && (
-                <p className="mt-1 text-sm text-error-600 dark:text-error-500">{errors.password}</p>
-              )}
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                id="rememberMe"
-                name="rememberMe"
-                type="checkbox"
-                className="h-4 w-4 text-brand-blue focus:ring-brand-blue-light border-gray-300 rounded dark:border-gray-700 dark:bg-gray-900"
-                checked={formData.rememberMe}
-                onChange={handleChange}
-              />
-              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                Remember me
-              </label>
-            </div>
-            
-            <div className="pt-4">
+
               <Button
                 type="submit"
-                fullWidth
-                size="lg"
-                className="mt-2 bg-brand-black text-white dark:bg-white dark:text-brand-black hover:bg-brand-blue-gray hover:text-white dark:hover:bg-brand-blue-gray dark:hover:text-white shadow-md"
-                disabled={isLoading}
+                className="w-full mt-2 bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100"
+                disabled={loginMutation.isPending}
               >
-                {isLoading ? 'Signing In...' : 'Sign In'}
+                {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
               </Button>
-            </div>
-          </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don&apos;t have an account?{' '}
-              <Link href="/auth/signup" className="text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light">
-                Sign up
-              </Link>
-            </p>
-          </div>
+            </form>
+          </Form>
         </div>
-      </Container>
+      </div>
     </div>
   );
 } 
