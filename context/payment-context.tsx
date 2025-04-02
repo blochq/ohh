@@ -1,6 +1,6 @@
 'use client';
 
-import { ICollectionAccount, IConversion, IExchangeRateResponse, IVerifyPaymentResponse } from '@/lib/models';
+import { ICollectionAccount, IConversion, IExchangeRateResponse, IVerifyPaymentResponse, IBeneficiary } from '@/lib/models';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 
@@ -27,6 +27,9 @@ interface PaymentContextType {
   
   
   clearPaymentData: () => void;
+
+  selectedBeneficiary: IBeneficiary | null;
+  setSelectedBeneficiary: (beneficiary: IBeneficiary | null) => void;
 }
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
@@ -46,6 +49,8 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   
  
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
+  
+  const [selectedBeneficiary, setSelectedBeneficiary] = useState<IBeneficiary | null>(null);
   
   const updateActivity = () => {
     setLastActivityTime(Date.now());
@@ -72,6 +77,8 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         lastActivityTime,
         updateActivity,
         clearPaymentData,
+        selectedBeneficiary,
+        setSelectedBeneficiary,
       }}
     >
       {children}

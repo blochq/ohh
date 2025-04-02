@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Card,
@@ -15,19 +15,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePaymentContext } from '@/context/payment-context';
-import { useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { verifyPayment } from '@/lib/api-calls';
 import { verifyPaymentSchema } from '@/lib/dto';
 import { z } from 'zod';
 import { getAuthToken } from '@/lib/helper-function';
 
-
-
 export default function VerifyPaymentPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [verificationAttempts, setVerificationAttempts] = useState(0);
   
-
   const {
     accountData,
     conversionData,
@@ -41,11 +39,13 @@ export default function VerifyPaymentPage() {
       router.push('/payment');
       return;
     }
-  }, [router, accountData, conversionData]);
-  
+    updateActivity();
+  }, [router, accountData, conversionData, updateActivity]);
 
-  const verifyPaymentMutation = useMutation({
-    mutationFn: async () => {
+
+  useQuery({
+    queryKey: ['verifyPayment', accountData?.reference, verificationAttempts],
+    queryFn: async () => {
       if (!accountData || !conversionData) {
         throw new Error('Missing account or conversion data');
       }
@@ -63,72 +63,52 @@ export default function VerifyPaymentPage() {
         token
       };
       
-   
-      
       const response = await verifyPayment(input);
       
-
-      
       if (response.error) {
+        setError(response.error.message);
         throw new Error(response.error.message);
       }
       
-      if (!response.data?.success || response.validationErrors && response.validationErrors?.length > 0) {
-        throw new Error(response.validationErrors?.[0]?.message || 'Invalid response format from the server');
-      }
-      
-      if (!response.data) {
-        throw new Error('Invalid response format from the server');
-      }
-      
- 
-      
-      return response.data;
-    },
-    onSuccess: (data) => {
-  
-      setVerificationData(data);
-      
-      if (data.success) {
+      if (response.data?.success) {
+        setVerificationData(response.data);
+        setError(null);
         toast.success('Payment verified successfully');
-        router.push('/recipient');
+        router.push('/beneficiary');
+        return response.data;
       } else {
-        toast.error('Payment not verified');
-        setError('Payment not verified yet. Please make sure you have completed the transfer and try again.');
+      
+        if (verificationAttempts < 10) {
+          setTimeout(() => {
+            setVerificationAttempts(prev => prev + 1);
+          }, 5000); 
+        }
+        setError('Payment not verified yet. We\'ll continue checking automatically.');
+        throw new Error('Payment not verified yet');
       }
     },
-    onError: (error: Error) => {
-      console.error('Error verifying payment:', error);
-      
-     
-      let errorMessage = 'Failed to verify payment. Please try again.';
-      
-      if (error.message.includes('404')) {
-        errorMessage = 'The payment verification service is currently unavailable. Please try again later.';
-      } else if (error.message.includes('JSON')) {
-        errorMessage = 'There was an issue with the server response. Please contact support.';
-      } else {
-        errorMessage = error.message;
-      }
-      
-      setError(errorMessage);
-      toast.error(errorMessage);
-    }
+    enabled: !!accountData && !!conversionData && verificationAttempts < 10,
+    retry: 0, 
+    refetchOnWindowFocus: false,
+    
   });
-  
-  const handleVerifyPayment = () => {
-    verifyPaymentMutation.mutate();
-  };
+
+
+  useEffect(() => {
+    if (accountData && conversionData && !verificationData?.success) {
+      setVerificationAttempts(1);
+    }
+  }, [accountData, conversionData, verificationData]);
   
   return (
     <div className="min-h-screen bg-white dark:bg-black p-4">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
-            Verify Your Payment
+            Verifying Your Payment
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Confirm that you&apos;ve completed the bank transfer
+            Please wait while we confirm your transfer
           </p>
         </div>
         
@@ -142,52 +122,44 @@ export default function VerifyPaymentPage() {
           <CardHeader>
             <CardTitle>Payment Status</CardTitle>
             <CardDescription>
-              Check the status of your payment
+              Automatically checking your payment status
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-6">
-            {verificationData ? (
+            {verificationData?.success ? (
               <div className="flex flex-col items-center justify-center p-6">
-                {verificationData.success ? (
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-500" />
-                    </div>
-                    <h4 className="text-xl font-medium text-gray-900 dark:text-white mb-2">Payment Verified!</h4>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Your payment of {conversionData?.amount} {conversionData?.sourceCurrency} has been verified.
-                    </p>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-500" />
                   </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
-                    </div>
-                    <h4 className="text-xl font-medium text-gray-900 dark:text-white mb-2">Payment Not Verified</h4>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      We haven&apos;t received your payment yet. Please make sure you&apos;ve completed the transfer.
-                    </p>
-                  </div>
-                )}
+                  <h4 className="text-xl font-medium text-gray-900 dark:text-white mb-2">Payment Verified!</h4>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Your payment of {conversionData?.amount} {conversionData?.sourceCurrency} has been verified.
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400 mt-2">
+                    Redirecting you to the next step...
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="text-center p-6">
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Click the button below to verify your payment once you&apos;ve completed the bank transfer.
-                </p>
-                <Button
-                  onClick={handleVerifyPayment}
-                  disabled={verifyPaymentMutation.isPending}
-                  className="w-full md:w-auto"
-                >
-                  {verifyPaymentMutation.isPending ? (
-                    <span className="flex items-center justify-center">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
-                    </span>
-                  ) : 'Verify Payment'}
-                </Button>
+                <div className="flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                    <Loader2 className="h-8 w-8 text-gray-500 dark:text-gray-400 animate-spin" />
+                  </div>
+                  <h4 className="text-xl font-medium text-gray-900 dark:text-white mb-2">Verifying Payment</h4>
+                  <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                    We&apos;re checking to see if your payment has been received. This might take a few moments. 
+                    Please don&apos;t close this window.
+                  </p>
+                  
+                  <div className="mt-8 w-full max-w-md mx-auto">
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-black dark:bg-white animate-pulse" style={{ width: '100%' }}></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -201,7 +173,7 @@ export default function VerifyPaymentPage() {
               <Button
                 onClick={() => {
                   updateActivity();
-                  router.push('/recipient');
+                  router.push('/beneficiary');
                 }}
                 className="w-full md:w-auto mx-auto"
               >
@@ -218,7 +190,8 @@ export default function VerifyPaymentPage() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 dark:text-gray-400">
-              Please ensure you&apos;ve made the payment to the correct account. If you encounter any issues with verification, please contact our support team.
+              Please ensure you&apos;ve made the payment to the correct account. If verification is taking longer than expected, 
+              please check that you included the correct reference number with your transfer.
             </p>
           </CardContent>
         </Card>

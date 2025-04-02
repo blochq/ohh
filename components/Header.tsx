@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   
   return (
     <header className={twMerge("flex justify-between items-center mb-8 pt-4", className)}>
-      <Logo size="md" className="text-gradient" />
+      <Logo size="md" className="text-black dark:text-white" />
       
       <div className="flex items-center space-x-4">
         {!isAuthPage && (
@@ -29,8 +29,8 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               href="/dashboard" 
               className={`text-sm font-medium transition-colors ${
                 pathname === '/dashboard' 
-                  ? 'text-brand-blue dark:text-brand-blue-light' 
-                  : 'text-gray-600 hover:text-brand-blue dark:text-gray-300 dark:hover:text-brand-blue-light'
+                  ? 'text-black dark:text-white' 
+                  : 'text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white'
               }`}
             >
               Dashboard
@@ -39,8 +39,8 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               href="/transactions" 
               className={`text-sm font-medium transition-colors ${
                 pathname.startsWith('/transactions') 
-                  ? 'text-brand-blue dark:text-brand-blue-light' 
-                  : 'text-gray-600 hover:text-brand-blue dark:text-gray-300 dark:hover:text-brand-blue-light'
+                  ? 'text-black dark:text-white' 
+                  : 'text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white'
               }`}
             >
               Transactions
@@ -49,8 +49,8 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               href="/recipient" 
               className={`text-sm font-medium transition-colors ${
                 pathname.startsWith('/recipient') 
-                  ? 'text-brand-blue dark:text-brand-blue-light' 
-                  : 'text-gray-600 hover:text-brand-blue dark:text-gray-300 dark:hover:text-brand-blue-light'
+                  ? 'text-black dark:text-white' 
+                  : 'text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white'
               }`}
             >
               Recipients
@@ -59,8 +59,8 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               href="/payment" 
               className={`text-sm font-medium transition-colors ${
                 pathname.startsWith('/payment') 
-                  ? 'text-brand-blue dark:text-brand-blue-light' 
-                  : 'text-gray-600 hover:text-brand-blue dark:text-gray-300 dark:hover:text-brand-blue-light'
+                  ? 'text-black dark:text-white' 
+                  : 'text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white'
               }`}
             >
               Send Money
@@ -70,8 +70,8 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               href="/user-management" 
               className={`text-sm font-medium transition-colors ${
                 pathname.startsWith('/user-management') 
-                  ? 'text-brand-blue dark:text-brand-blue-light' 
-                  : 'text-gray-600 hover:text-brand-blue dark:text-gray-300 dark:hover:text-brand-blue-light'
+                  ? 'text-black dark:text-white' 
+                  : 'text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white'
               }`}
             >
               Manage Users
@@ -82,12 +82,11 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         
         {!isAuthPage && (
           <div className="hidden md:flex items-center mr-4">
-            <div className="text-sm text-brand-gray dark:text-gray-300 mr-4">Welcome, {userName}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300 mr-4">Welcome, {userName}</div>
             <Link 
               href="/auth/login" 
-              className="text-sm text-brand-blue-gray hover:text-brand-gray transition-colors dark:text-gray-400 dark:hover:text-white"
+              className="text-sm text-gray-600 hover:text-black transition-colors dark:text-gray-400 dark:hover:text-white"
             >
-              
               Sign Out
             </Link>
           </div>

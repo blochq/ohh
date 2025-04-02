@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,15 +24,31 @@ import {
 } from "@/components/ui/form";
 import { toast } from "sonner";
 import { usePaymentContext } from '@/context/payment-context';
-import { ArrowRight, ArrowLeft, RotateCw, Search, Printer } from 'lucide-react';
+import { ArrowRight, ArrowLeft, RotateCw, Search, Printer, Check, ChevronsUpDown } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { getBankList, resolveAccount, transfer } from '@/lib/api-calls';
 import { getAuthToken } from '@/lib/helper-function';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { resolveAccountSchema, TransferFormData } from '@/lib/dto';
 import { transferSchema } from '@/lib/dto';
+import { cn } from "@/lib/utils";
 
+// Custom useDebounce hook implementation
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 interface ReceiptData {
   date: string;
@@ -63,39 +72,22 @@ interface ReceiptData {
   status: string;
 }
 
-
-
 export default function RecipientPage() {
   const router = useRouter();
   const receiptRef = useRef<HTMLDivElement>(null);
   const { updateActivity, accountData, conversionData, exchangeRateData } = usePaymentContext();
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [bankCode, setBankCode] = useState<string>('');
+  const [bankName, setBankName] = useState<string>('');
   const [accountName, setAccountName] = useState<string | null>(null);
   const [transferSuccess, setTransferSuccess] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
+  const [openBankSelect, setOpenBankSelect] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isResolvingAccount, setIsResolvingAccount] = useState(false);
   
-
-  React.useEffect(() => {
-    if (!accountData || !conversionData) {
-      router.push('/payment');
-    }
-  }, [accountData, conversionData, router]);
-  
-  const form = useForm<TransferFormData>({
-    resolver: zodResolver(transferSchema),
-    defaultValues: {
-      account_number: "",
-      bank_code: "",
-      amount: conversionData?.amount || 0,
-      narration: "",
-      account_id: "",
-      reference: accountData?.reference,
-      token: "",
-    },
-  });
-  
+  const ACCOUNT_NUMBER_LENGTH = 10;
 
   const { data: bankListData, isLoading: isLoadingBanks } = useQuery({
     queryKey: ['bankList'],
@@ -124,7 +116,38 @@ export default function RecipientPage() {
     },
     enabled: !!getAuthToken(),
   });
+
+
+  const filteredBanks = useMemo(() => {
+    if (!bankListData?.data) return [];
+    
+    return searchTerm
+      ? bankListData.data.filter(bank => 
+          bank.bank_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      : bankListData.data;
+  }, [bankListData, searchTerm]);
+
+  React.useEffect(() => {
+    if (!accountData || !conversionData) {
+      router.push('/payment');
+    }
+  }, [accountData, conversionData, router]);
   
+  const form = useForm<TransferFormData>({
+    resolver: zodResolver(transferSchema),
+    defaultValues: {
+      account_number: "",
+      bank_code: "",
+      amount: conversionData?.amount || 0,
+      narration: "",
+      account_id: "",
+      reference: accountData?.reference,
+      token: "",
+    },
+  });
+  
+  const accountNumber = form.watch('account_number');
+
 
   const resolveAccountMutation = useMutation({
     mutationFn: async (data: z.infer<typeof resolveAccountSchema>) => {
@@ -156,8 +179,77 @@ export default function RecipientPage() {
       return response.data;
     }
   });
-  
 
+  // Core account resolution function
+  const resolveAccountName = useCallback(async () => {
+    if (!bankCode || !accountNumber || accountNumber.length < ACCOUNT_NUMBER_LENGTH) {
+      return;
+    }
+    
+    if (isResolvingAccount) {
+      return;
+    }
+    
+    setIsResolvingAccount(true);
+    setResolveError(null);
+    updateActivity();
+    
+    try {
+      const result = await resolveAccountMutation.mutateAsync({
+        account_number: accountNumber,
+        bank_code: bankCode,
+        token: getAuthToken() || ""
+      });
+      
+      if (result.data.account_name) {
+        setAccountName(result.data.account_name);
+        toast.success(`Account resolved: ${result.data.account_name}`);
+      } else {
+        setResolveError('Could not resolve account name');
+        setAccountName(null);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setResolveError(error.message);
+      } else {
+        setResolveError('Failed to resolve account');
+      }
+      setAccountName(null);
+    } finally {
+      setIsResolvingAccount(false);
+    }
+  }, [accountNumber, bankCode, isResolvingAccount, updateActivity, resolveAccountMutation]);
+  
+  // Create debounced values for account number and bank code
+  const debouncedAccountNumber = useDebounce(accountNumber, 500);
+  const debouncedBankCode = useDebounce(bankCode, 500);
+  
+  // Effect to resolve account when debounced values change
+  useEffect(() => {
+    const shouldResolve = 
+      debouncedBankCode && 
+      debouncedAccountNumber && 
+      debouncedAccountNumber.length >= ACCOUNT_NUMBER_LENGTH && 
+      !isResolvingAccount;
+
+    if (shouldResolve) {
+      resolveAccountName();
+    }
+  }, [debouncedAccountNumber, debouncedBankCode, ACCOUNT_NUMBER_LENGTH, isResolvingAccount, resolveAccountName]);
+
+  const handleBankChange = useCallback((value: string, name: string) => {
+    setBankCode(value);
+    setBankName(name);
+    form.setValue('bank_code', value);
+    setOpenBankSelect(false);
+    setSearchTerm('');
+    
+    // Reset account name when bank changes
+    if (accountName) {
+      setAccountName(null);
+    }
+  }, [form, accountName]);
+  
   const transferMutation = useMutation({
     mutationFn: async (data: z.infer<typeof transferSchema>) => {
       const token = getAuthToken();
@@ -180,57 +272,6 @@ export default function RecipientPage() {
       return response;
     }
   });
-  
- 
-  const handleBankChange = (value: string) => {
-    const selectedBankData = bankListData?.data.find(bank => bank.bank_name === value);
-    if (selectedBankData) {
-      setBankCode(selectedBankData.bank_code);
-      form.setValue('bank_code', value);
-    }
-  };
-  
-  
-  const handleResolveAccount = async () => {
-    const accountNumber = form.getValues('account_number');
-    
-    if (!accountNumber || accountNumber.length < 5) {
-      setResolveError('Please enter a valid account number');
-      return;
-    }
-    
-    if (!bankCode) {
-      setResolveError('Please select a bank first');
-      return;
-    }
-    
-    setResolveError(null);
-    updateActivity();
-    
-    try {
-      const result = await resolveAccountMutation.mutateAsync({
-        account_number: accountNumber,
-        bank_code: bankCode,
-        token: getAuthToken() || ""
-      });
-      console.log("result", result);
-      
-      if (result.data.account_name) {
-        setAccountName(result.data.account_name);
-      
-        toast.success(`Account resolved: ${result.data.account_name}`);
-      } else {
-        setResolveError('Could not resolve account name');
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        setResolveError(error.message);
-      } else {
-        setResolveError('Failed to resolve account');
-      }
-    }
-  };
-  
   
   const handleTransfer = async () => {
     const values = form.getValues();
@@ -326,24 +367,24 @@ export default function RecipientPage() {
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               Enter the bank account details to complete your transfer
-            </p>
-          </div>
-    
-          <div className="mb-8">
-            <div className="flex items-center justify-center">
-              <div className="flex items-center w-full max-w-xs">
-                <div className="flex-1">
+          </p>
+        </div>
+        
+        <div className="mb-8">
+          <div className="flex items-center justify-center">
+            <div className="flex items-center w-full max-w-xs">
+              <div className="flex-1">
                   <div className="w-full bg-blue-600 h-1 rounded-full"></div>
-                </div>
-                <div className="relative">
+              </div>
+              <div className="relative">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-white flex items-center justify-center text-sm font-medium shadow-md">
-                    3
-                  </div>
-                  <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 text-center font-medium">
-                    Recipient
-                  </div>
+                  3
                 </div>
-                <div className="flex-1">
+                  <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 text-center font-medium">
+                  Recipient
+                </div>
+              </div>
+              <div className="flex-1">
                   <div className="w-full bg-gray-200 dark:bg-gray-700 h-1 rounded-full"></div>
                 </div>
               </div>
@@ -393,34 +434,75 @@ export default function RecipientPage() {
                   <FormField
                     control={form.control}
                     name="bank_code"
-                    render={({ field }) => (
-                      <FormItem>
+                    render={() => (
+                      <FormItem className="flex flex-col">
                         <FormLabel>Bank Name</FormLabel>
-                        <Select onValueChange={handleBankChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
+                        <div className="relative">
+                          <div 
+                            className={cn(
+                              "w-full border rounded-md shadow-sm bg-white dark:bg-gray-950",
+                              isLoadingBanks && "opacity-50 cursor-not-allowed"
+                            )}
+                            onClick={() => !isLoadingBanks && setOpenBankSelect(!openBankSelect)}
+                          >
+                            <div className="flex items-center p-2 cursor-pointer">
                               {isLoadingBanks ? (
-                                <div className="flex items-center">
+                                <div className="flex items-center text-gray-500">
                                   <RotateCw className="mr-2 h-4 w-4 animate-spin" />
                                   <span>Loading banks...</span>
                                 </div>
                               ) : (
-                                <SelectValue placeholder="Select bank" />
+                                <>
+                                  <span className={bankName ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}>
+                                    {bankName || "Select bank"}
+                                  </span>
+                                  <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                                </>
                               )}
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {bankListData?.data?.map((bank) => (
-                              <SelectItem key={bank.bank_name} value={bank.bank_code}>
-                                {bank.bank_name}
-                              </SelectItem>
-                            )) || (
-                              <SelectItem value="loading" disabled>
-                                No banks available
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
+                            </div>
+                          </div>
+
+                          {openBankSelect && !isLoadingBanks && (
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-950 rounded-md shadow-lg border dark:border-gray-800">
+                              <div className="p-2 border-b dark:border-gray-800">
+                                <Input
+                                  type="text"
+                                  placeholder="Search banks..."
+                                  value={searchTerm}
+                                  onChange={(e) => setSearchTerm(e.target.value)}
+                                  className="w-full"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                              <div className="max-h-[300px] overflow-y-auto">
+                                {filteredBanks.length === 0 ? (
+                                  <div className="p-2 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                    No banks found
+                                  </div>
+                                ) : (
+                                  filteredBanks.map((bank) => (
+                                    <div
+                                      key={bank.bank_code}
+                                      className={cn(
+                                        "flex items-center px-2 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800",
+                                        bankCode === bank.bank_code && "bg-gray-100 dark:bg-gray-800"
+                                      )}
+                                      onClick={() => handleBankChange(bank.bank_code, bank.bank_name)}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          bankCode === bank.bank_code ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <span className="text-gray-900 dark:text-gray-100">{bank.bank_name}</span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -437,41 +519,56 @@ export default function RecipientPage() {
                             <FormControl className="flex-1">
                               <Input 
                                 placeholder="Enter account number" 
+                                maxLength={10}
                                 {...field} 
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  // Reset account name when account number changes
+                                  if (accountName) {
+                                    setAccountName(null);
+                                  }
+                                  // Our useEffect with debounced values will handle account resolution
+                                }}
                               />
                             </FormControl>
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              onClick={handleResolveAccount}
-                              disabled={resolveAccountMutation.isPending || !bankCode}
-                            >
-                              {resolveAccountMutation.isPending ? (
-                                <RotateCw className="mr-2 h-4 w-4 animate-spin" />
-                              ) : (
-                                <Search className="mr-2 h-4 w-4" />
-                              )}
-                              Resolve
-                            </Button>
                           </div>
                           <FormMessage />
                         </FormItem>
                       )}
-                      />
+                    />
                     
-                      <p className='text-gray-500 dark:text-gray-400 text-sm'>{accountName}</p>
-                    
-                  
+                    <div className="flex items-center min-h-[32px]">
+                      {isResolvingAccount ? (
+                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                          <RotateCw className="mr-2 h-3 w-3 animate-spin" />
+                          <span>Resolving account name...</span>
+                        </div>
+                      ) : accountName ? (
+                        <div className="flex items-center text-sm">
+                          <Check className="mr-1 h-4 w-4 text-green-500" />
+                          <span className="font-medium text-gray-900 dark:text-white">{accountName}</span>
+                        </div>
+                      ) : (
+                        bankCode && accountNumber && accountNumber.length >= 10 && (
+                          <p className="text-sm text-amber-500">
+                            <Search className="inline mr-1 h-3 w-3" />
+                            Looking up account details...
+                          </p>
+                        )
+                      )}
+                    </div>
                   </div>
+                  
                   <FormField
                     control={form.control}
                     name="narration"
-                    render={({   field }) => (
+                    render={({ field }) => (
                       <FormItem>
                         <FormLabel>Narration</FormLabel>
                         <FormControl> 
-                          <Input
+                  <Input
                             type="text"
+                            placeholder="What is this transfer for?"
                             {...field}
                           />
                         </FormControl>
@@ -519,7 +616,7 @@ export default function RecipientPage() {
               </form>
             </Form>
           </Card>
-        </div>
+              </div>
       ) : (
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-4">
@@ -529,8 +626,8 @@ export default function RecipientPage() {
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               Your transfer has been completed successfully
             </p>
-          </div>
-          
+              </div>
+              
           {receiptData && (
             <>
               <Card className="border-gray-200 dark:border-gray-800 shadow-md overflow-hidden" ref={receiptRef}>
@@ -553,7 +650,7 @@ export default function RecipientPage() {
                         </p>
                       </div>
                       
-                      <div>
+                    <div>
                         <h3 className="font-medium text-gray-900 dark:text-white mb-2">Transaction Type</h3>
                         <p className="text-gray-600 dark:text-gray-400">International Transfer</p>
                       </div>
@@ -577,8 +674,8 @@ export default function RecipientPage() {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500 dark:text-gray-400">Exchange rate:</span>
                           <span className="text-gray-600 dark:text-gray-300">1 {receiptData.amount.sentCurrency} = {receiptData.amount.exchangeRate} {receiptData.amount.receivedCurrency}</span>
-                        </div>
-                        
+                  </div>
+                  
                         {receiptData.fee > 0 && (
                           <div className="flex justify-between text-sm mt-1">
                             <span className="text-gray-500 dark:text-gray-400">Fee:</span>
@@ -594,36 +691,36 @@ export default function RecipientPage() {
                         <p className="text-gray-900 dark:text-white font-medium">{receiptData.recipient.name}</p>
                         <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{receiptData.recipient.bank}</p>
                         <p className="text-gray-600 dark:text-gray-400 text-sm">Account: {receiptData.recipient.accountNumber}</p>
-                      </div>
-                    </div>
-                    
+              </div>
+            </div>
+            
                     <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-400">
                       <p>Thank you for using our services.</p>
                       <p className="mt-1">If you have any questions, please contact our support.</p>
-                    </div>
+                </div>
                   </CardContent>
                 </div>
               </Card>
-              
+
               <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-3">
-                <Button
-                  type="button" 
+                  <Button
+                    type="button"
                   variant="outline"
                   onClick={handlePrintReceipt}
                   className="w-full sm:w-auto"
-                >
+                  >
                   <Printer className="mr-2 h-4 w-4" />
                   Print Receipt
-                </Button>
+                  </Button>
                 
-                <Button
-                  type="button"
+                  <Button
+                    type="button"
                   onClick={() => router.push('/dashboard')}
                   className="w-full sm:w-auto bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
-                >
+                  >
                   Go to Dashboard
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                  </Button>
               </div>
             </>
           )}

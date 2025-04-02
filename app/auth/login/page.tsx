@@ -80,7 +80,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-white dark:bg-black p-4">
       <div className="max-w-md mx-auto min-h-screen">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-gradient">Welcome Back</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold mb-2 bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
+            Welcome Back
+          </h1>
           <p className="text-gray-600 dark:text-gray-300">Sign in to your account</p>
         </div>
         
@@ -97,6 +99,7 @@ export default function LoginPage() {
                       <Input 
                         placeholder="john.doe@example.com" 
                         type="email" 
+                        className="border-gray-200 dark:border-gray-800 focus:border-gray-900 dark:focus:border-gray-100"
                         {...field}
                       />
                     </FormControl>
@@ -114,7 +117,7 @@ export default function LoginPage() {
                       <FormLabel>Password</FormLabel>
                       <Link 
                         href="/auth/forgot-password" 
-                        className="text-sm text-brand-blue hover:text-brand-blue-dark dark:text-brand-blue-light"
+                        className="text-sm text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white"
                       >
                         Forgot password?
                       </Link>
@@ -123,6 +126,7 @@ export default function LoginPage() {
                       <Input 
                         placeholder="••••••••" 
                         type="password"
+                        className="border-gray-200 dark:border-gray-800 focus:border-gray-900 dark:focus:border-gray-100"
                         {...field}
                       />
                     </FormControl>
@@ -133,7 +137,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full mt-2 bg-brand-black text-white dark:bg-white dark:text-brand-black hover:bg-brand-blue-gray hover:text-white dark:hover:bg-brand-blue-gray dark:hover:text-white shadow-md"
+                className="w-full mt-2 bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100"
                 disabled={loginMutation.isPending}
               >
                 {loginMutation.isPending ? 'Signing In...' : 'Sign In'}

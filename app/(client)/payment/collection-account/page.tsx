@@ -246,23 +246,16 @@ export default function CollectionAccountPage() {
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">You&apos;re sending</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Amount</p>
                         <p className="text-xl font-bold text-black dark:text-white">
-                          {conversionData.sourceCurrency} {conversionData.sourceAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Naira equivalent</p>
-                        <p className="text-xl font-bold text-black dark:text-white">
-                          ₦ {conversionData.destinationAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          {conversionData.destinationCurrency} {conversionData.destinationAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </p>
                       </div>
                       
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Exchange rate</p>
                         <p className="text-black dark:text-white">
-                          1 {conversionData.sourceCurrency} = ₦ {conversionData.rate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          1 {conversionData.destinationCurrency} = ₦ {conversionData.rate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </p>
                       </div>
                       
@@ -270,6 +263,13 @@ export default function CollectionAccountPage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Fee</p>
                         <p className="text-black dark:text-white">
                           ₦ {conversionData.fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Total amount to send</p>
+                        <p className="text-xl font-bold text-black dark:text-white">
+                          ₦ {(conversionData.amount + conversionData.fee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </p>
                       </div>
                     </div>
@@ -340,7 +340,7 @@ export default function CollectionAccountPage() {
                   onClick={handleContinue}
                   className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
                 >
-                  Continue to Verification
+                 I have made the payment, Continue to Verification
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardFooter>

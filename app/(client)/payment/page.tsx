@@ -21,49 +21,34 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { ExternalLink, Clock, ArrowRight, RotateCw } from 'lucide-react';
-import { getExchangeRate } from '@/lib/api-calls';
-import { exchangeRateSchema } from '@/lib/dto';
+import { getExchangeRate, getTransferFee, getSupportedCurrencies, getSupportedCountries } from '@/lib/api-calls';
+import { exchangeRateSchema, getTransferFeeSchema, getSupportedCurrenciesSchema, getSupportedCountriesSchema } from '@/lib/dto';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { usePaymentContext } from '@/context/payment-context';
-import { IConversion } from '@/lib/models'; 
-
-
-
-const countries = [
-  { code: 'US', name: 'United States' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'JP', name: 'Japan' },
-];
-
-const countryCurrencyMap: Record<string, string> = {
-  'US': 'USD',
-  'CA': 'CAD',
-  'GB': 'GBP',
-  'AU': 'AUD',
-  'DE': 'EUR',
-  'FR': 'EUR',
-  'JP': 'JPY',
-};
-
+import { IConversion, ISupportedCurrency, ISupportedCountry } from '@/lib/models'; 
+import { getAuthToken } from '@/lib/helper-function';
 
 const SESSION_TIMEOUT = 5 * 60 * 1000;
+
+const FALLBACK_COUNTRIES = [
+  { code: 'US', name: 'United States', currency: 'USD' }
+];
 
 export default function PaymentPage() {
   const router = useRouter();
   const [amount, setAmount] = useState<string>('');
-  const [country, setCountry] = useState<string>('');
+  const [destinationCountry, setDestinationCountry] = useState<string>('');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [showSessionWarning, setShowSessionWarning] = useState<boolean>(false);
   const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(SESSION_TIMEOUT);
+  const [transferFee, setTransferFee] = useState<{fee: number, vat: number} | null>(null);
+  const [supportedCountries, setSupportedCountries] = useState<ISupportedCountry[]>([]);
+  const [supportedCurrencies, setSupportedCurrencies] = useState<ISupportedCurrency[]>([]);
   
- 
   const {
     exchangeRateData,
     setExchangeRateData,
@@ -72,6 +57,62 @@ export default function PaymentPage() {
     lastActivityTime,
     updateActivity
   } = usePaymentContext();
+
+  const token = getAuthToken();
+
+  const { data: currenciesData } = useQuery({
+    queryKey: ['supportedCurrencies'],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required');
+      const input: z.infer<typeof getSupportedCurrenciesSchema> = { token };
+      const response = await getSupportedCurrencies(input);
+      if (response.error) throw new Error(response.error.message);
+      return response.data;
+    },
+    enabled: !!token,
+  });
+
+  const { data: countriesData, error: countriesError } = useQuery({
+    queryKey: ['supportedCountries'],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required');
+      const input: z.infer<typeof getSupportedCountriesSchema> = { 
+        token,
+        account_id: '677b05091a76dcbc1b5341c5'
+      };
+      const response = await getSupportedCountries(input);
+      if (response.error) throw new Error(response.error.message);
+      return response.data;
+    },
+    enabled: !!token,
+  });
+
+  useEffect(() => {
+    if (currenciesData?.data) {
+      setSupportedCurrencies(currenciesData.data);
+    }
+    if (countriesData?.data) {
+      // Transform the API response into the required format
+      const transformedCountries = Object.entries(countriesData.data)
+        .filter(([key]) => key.endsWith('_code')) // Only get country codes
+        .map(([key, code]) => {
+          const countryName = key.replace('_code', '');
+          const currency = countriesData.data[countryName];
+          return {
+            code: code as string,
+            name: countryName,
+            currency: currency as string
+          };
+        })
+        .filter(country => country.code && country.name && country.currency); // Filter out invalid entries
+      
+      setSupportedCountries(transformedCountries);
+    } else if (countriesError) {
+      // Fallback to United States if API fails
+      setSupportedCountries(FALLBACK_COUNTRIES);
+      toast.warning('Using fallback country list');
+    }
+  }, [currenciesData, countriesData, countriesError]);
 
   useEffect(() => {
     const events = ['mousedown', 'keypress', 'scroll', 'touchstart'];
@@ -117,7 +158,6 @@ export default function PaymentPage() {
       if (remaining === 0) {
         toast.error("Your session has expired");
         clearInterval(sessionCheckInterval);
-        router.push('/');
       }
     }, 1000);
     
@@ -126,12 +166,29 @@ export default function PaymentPage() {
     };
   }, [lastActivityTime, router, showSessionWarning, updateActivity]);
 
-  const getAuthToken = (): string => {
-    const token = typeof window !== 'undefined' 
-      ? localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '' 
-      : '';
-    return token;
-  };
+  const transferFeeMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof getTransferFeeSchema>) => {
+      const response = await getTransferFee(data);
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      if (response.validationErrors && response.validationErrors.length > 0) {
+        throw new Error(response.validationErrors[0].message);
+      }
+      return response.data;
+    },
+    onSuccess: (data) => {
+      if (data && data.data) {
+        setTransferFee({
+          fee: data.data.transaction_fee,
+          vat: data.data.transaction_vat
+        });
+      }
+    },
+    onError: (error: Error) => {
+      console.error('Failed to fetch transfer fee:', error);
+    }
+  });
 
   const exchangeRateMutation = useMutation({
     mutationFn: async (data: z.infer<typeof exchangeRateSchema>) => {
@@ -145,23 +202,36 @@ export default function PaymentPage() {
       return response.data;
     },
     onSuccess: (data) => {
-      if (data) {
-       
-        setExchangeRateData(data);
-        
-    
+      if (data && data.success) {
+
+        transferFeeMutation.mutate({
+          token,
+          amount: data.data.amount
+        });
+
+
+        setExchangeRateData({
+          data: {
+            amount: (data.data.amount/100),
+            provider_name: data.data.provider_name
+          },
+          success: true,
+          message: 'Exchange rate calculated successfully'
+        });
         if (data.data) {
           const convData: IConversion = {
-            sourceCurrency: countryCurrencyMap[country] || 'USD',
-            sourceAmount: parseFloat(amount),
-            destinationCurrency: 'NGN',
-            destinationAmount: data.data.amount,
-            rate: data.data.amount / parseFloat(amount),
-            fee: 0,
+            sourceCurrency: 'NGN',
+            sourceAmount: data.data.amount/100,
+            destinationCurrency: selectedCurrency,
+            destinationAmount: parseFloat(amount),
+            rate: (data.data.amount/100) / parseFloat(amount),
+            fee: (transferFee?.fee || 0) + (transferFee?.vat || 0),
             provider_name: data.data.provider_name,
-            amount: data.data.amount
+            amount: (data.data.amount/100 ) 
           };
           setConversionData(convData);
+          
+  
         }
         
         toast.success("Exchange rate calculated successfully");
@@ -177,15 +247,28 @@ export default function PaymentPage() {
     
     if (exchangeRateData) {
       setExchangeRateData(null);
+      setTransferFee(null);
     }
   };
 
-  const handleCountryChange = (value: string) => {
-    setCountry(value);
+  const handleDestinationCountryChange = (value: string) => {
+    setDestinationCountry(value);
     updateActivity();
   
     if (exchangeRateData) {
       setExchangeRateData(null);
+      setTransferFee(null);
+    }
+  };
+  
+
+  const handleCurrencyChange = (value: string) => {
+    setSelectedCurrency(value);
+    updateActivity();
+  
+    if (exchangeRateData) {
+      setExchangeRateData(null);
+      setTransferFee(null);
     }
   };
 
@@ -193,8 +276,8 @@ export default function PaymentPage() {
     e.preventDefault();
     updateActivity();
     
-    if (!amount || !country) {
-      setError('Please enter an amount and select a country');
+    if (!amount || !destinationCountry || !selectedCurrency) {
+      setError('Please enter an amount and select both destination country and currency');
       return;
     }
     
@@ -211,10 +294,8 @@ export default function PaymentPage() {
       return;
     }
     
-    const currencyCode = countryCurrencyMap[country] || 'USD';
-    
     exchangeRateMutation.mutate({
-      currency: currencyCode,
+      currency: selectedCurrency,
       amount: parseFloat(amount),
       token
     });
@@ -225,12 +306,23 @@ export default function PaymentPage() {
     router.push('/payment/collection-account');
   };
 
-  // Format time for display (mm:ss)
+
   const formatTimeLeft = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+
+  const calculateTotalFee = (): number => {
+    if (transferFee) {
+      return transferFee.fee + transferFee.vat;
+    } else if (conversionData) {
+      // Fallback to estimate if API fee not available
+      return conversionData.sourceAmount * 0.01;
+    }
+    return 0;
   };
 
   return (
@@ -241,7 +333,7 @@ export default function PaymentPage() {
             Send Payment
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Enter the amount you want to send
+            Enter the amount and select destination details
           </p>
         </div>
         
@@ -251,7 +343,7 @@ export default function PaymentPage() {
               <div>
                 <CardTitle>Payment Details</CardTitle>
                 <CardDescription>
-                  Enter the amount and select sender&apos;s country
+                  Enter the amount and select destination country and currency
                 </CardDescription>
               </div>
               {sessionTimeLeft < SESSION_TIMEOUT && (
@@ -271,18 +363,51 @@ export default function PaymentPage() {
               )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {supportedCurrencies.map((currency) => (
+                        <SelectItem key={currency._id} value={currency.currency}>
+                          {currency.currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="destinationCountry">Destination Country</Label>
+                  <Select value={destinationCountry} onValueChange={handleDestinationCountryChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select destination country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {supportedCountries.map((country) => (
+                        <SelectItem key={country.code} value={country.code}>
+                          {country.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount</Label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 dark:text-gray-400">
-                        {country ? (country === 'US' ? '$' : country === 'GB' ? '£' : country === 'JP' ? '¥' : '€') : '$'}
+                        {selectedCurrency || '$'}
                       </span>
                     </div>
                     <Input
                       type="number"
                       id="amount"
-                      className="pl-7"
+                      className="pl-[50px]"
                       placeholder="0.00"
                       min="100"
                       step="0.01"
@@ -291,25 +416,13 @@ export default function PaymentPage() {
                     />
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Minimum amount: {country && countryCurrencyMap[country] ? countryCurrencyMap[country] : 'USD'} 100.00
+                    Minimum amount: {selectedCurrency || 'USD'} 100.00
                   </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="country">Sender&apos;s Country</Label>
-                  <Select value={country} onValueChange={handleCountryChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          {country.name} ({countryCurrencyMap[country.code]})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+
+
+
               </div>
               
               <div className="pt-4">
@@ -342,7 +455,6 @@ export default function PaymentPage() {
           </CardContent>
         </Card>
 
-        {/* Exchange Rate Results */}
         {exchangeRateData && (
           <Card className="border-gray-200 dark:border-gray-800">
             <CardHeader>
@@ -352,31 +464,37 @@ export default function PaymentPage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">You send</p>
-                  <p className="text-xl font-bold text-black dark:text-white mt-1">
-                    {country && countryCurrencyMap[country] ? countryCurrencyMap[country] : 'USD'} {parseFloat(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Naira equivalent</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">You send (NGN)</p>
                   <p className="text-xl font-bold text-black dark:text-white mt-1">
                     ₦ {exchangeRateData.data?.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </p>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Recipient gets</p>
+                  <p className="text-xl font-bold text-black dark:text-white mt-1">
+                    {selectedCurrency} {parseFloat(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Exchange rate</p>
                   <p className="text-black dark:text-white mt-1">
-                    1 {country && countryCurrencyMap[country] ? countryCurrencyMap[country] : 'USD'} = ₦ {(conversionData?.rate || 750).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    1 {selectedCurrency} = ₦ {(conversionData?.rate || 750).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </p>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Fee</p>
                   <p className="text-black dark:text-white mt-1">
-                    ₦ {(conversionData?.fee || parseFloat(amount) * 0.01).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    ₦ {calculateTotalFee().toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </p>
+                  {transferFee && (
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <p>Transaction fee: ₦ {transferFee.fee.toLocaleString()}</p>
+                      <p>VAT: ₦ {transferFee.vat.toLocaleString()}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -398,8 +516,8 @@ export default function PaymentPage() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 dark:text-gray-400">
-              Our exchange rates are updated in real-time to give you the best value when sending money to Nigeria. 
-              We charge a transparent fee of 1% on the exchange rate.
+              Our exchange rates are updated in real-time to give you the best value when sending money internationally. 
+              Fees include transaction processing costs and VAT as required by local regulations.
             </p>
           </CardContent>
         </Card>

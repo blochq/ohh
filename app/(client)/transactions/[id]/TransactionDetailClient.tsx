@@ -1,14 +1,31 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Container from '../../components/Container';
-import Button from '../../components/Button';
-import Logo from '../../../components/Logo';
+import React from 'react';
 import Link from 'next/link';
-import ThemeToggle from '../../../components/ThemeToggle';
-import { transactionService } from '../../../lib/api/services';
-import { Transaction } from '../../../lib/api/types';
 import { useRouter } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { getSingleTransaction } from '@/lib/api-calls';
+import { getAuthToken } from '@/lib/helper-function';
+import { ITransaction } from '@/lib/models';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Send, 
+  RefreshCw, 
+  ChevronLeft, 
+  ExternalLink, 
+  Printer, 
+  Download 
+} from 'lucide-react';
+import { Separator } from "@/components/ui/separator";
 
 interface TransactionDetailClientProps {
   id: string;
@@ -16,47 +33,50 @@ interface TransactionDetailClientProps {
 
 export default function TransactionDetailClient({ id }: TransactionDetailClientProps) {
   const router = useRouter();
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [statusLoading, setStatusLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        const response = await transactionService.getTransaction(id);
-        setTransaction(response.data);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load transaction details';
-        setError(errorMessage);
-        console.error('Error fetching transaction:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchTransaction();
-  }, [id]);
+  const {
+    data: transactionData,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['transaction', id],
+    queryFn: async () => {
+      const token = getAuthToken();
+      if (!token) throw new Error('Authentication required');
+      
+      const response = await getSingleTransaction({ 
+        token, 
+        reference: id 
+      });
+      
+      if (response.error) throw new Error(response.error.message);
+      return response.data;
+    },
+  });
 
-  const refreshStatus = async () => {
-    if (!transaction) return;
-    
-    setStatusLoading(true);
-    try {
-      const response = await transactionService.getTransactionStatus(id);
-      setTransaction(prev => prev ? { ...prev, status: response.data.status } : null);
-    } catch (err: unknown) {
-      console.error('Error refreshing status:', err);
-    } finally {
-      setStatusLoading(false);
-    }
-  };
+ 
+  const refreshStatusMutation = useMutation({
+    mutationFn: async () => {
+      const token = getAuthToken();
+      if (!token) throw new Error('Authentication required');
+      
+      return await getSingleTransaction({ token, reference: id });
+    },
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
-  // Format currency
+ 
+  const transaction = transactionData?.data as ITransaction | undefined;
+
+
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-NG', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'NGN',
       minimumFractionDigits: 2
     }).format(amount);
   };
@@ -72,225 +92,230 @@ export default function TransactionDetailClient({ id }: TransactionDetailClientP
     });
   };
 
+  // Get status badge variant
+  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return "default";
+      case 'pending':
+        return "secondary";
+      case 'processing':
+        return "outline";
+      case 'failed':
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
+
+  // Mock function to print receipt
+  const printReceipt = () => {
+    window.print();
+  };
+
+  // Mock function to download receipt
+  const downloadReceipt = () => {
+    alert('Download functionality will be implemented soon');
+  };
+
   return (
-    <main className="min-h-screen bg-white dark:bg-black p-4">
-      <header className="flex justify-between items-center mb-8 pt-4">
-        <Logo size="md" />
-        <div className="flex items-center space-x-4">
-          <ThemeToggle />
-          <Link 
-            href="/transactions" 
-            className="text-sm text-brand-blue-gray hover:text-brand-gray transition-colors dark:text-gray-400 dark:hover:text-white"
-          >
-            All Transactions
-          </Link>
-          <Link 
-            href="/dashboard" 
-            className="text-sm text-brand-blue-gray hover:text-brand-gray transition-colors dark:text-gray-400 dark:hover:text-white"
-          >
-            Dashboard
-          </Link>
-        </div>
-      </header>
+    <div className="container max-w-5xl mx-auto p-6 space-y-8">
+      {/* Back Navigation */}
+      <Button 
+        variant="ghost" 
+        className="mb-6 pl-0 hover:bg-transparent hover:text-blue-600 dark:hover:text-blue-400"
+        onClick={() => router.push('/transactions')}
+      >
+        <ChevronLeft className="mr-1 h-4 w-4" />
+        Back to Transactions
+      </Button>
 
-      <Container maxWidth="full">
-        <div className="mb-6">
-          <Link 
-            href="/transactions" 
-            className="text-sm text-brand-blue-gray hover:text-brand-gray flex items-center dark:text-gray-400 dark:hover:text-white"
-          >
-            <svg 
-              className="w-4 h-4 mr-1" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M10 19l-7-7m0 0l7-7m-7 7h18" 
-              />
-            </svg>
-            Back to Transactions
-          </Link>
-        </div>
+      {/* Page Title */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-400 bg-clip-text text-transparent">
+          Transaction Details
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
+          View the details of your payment
+        </p>
+      </div>
 
-        <div className="mb-10">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-brand-black dark:text-white tracking-tight">
-            Transaction Details
-          </h1>
-          <p className="text-brand-gray dark:text-gray-300">
-            View the details of your payment
-          </p>
-        </div>
-
-        {isLoading ? (
-          <div className="container-card py-12 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-black dark:border-white mx-auto"></div>
-            <p className="mt-4 text-brand-gray dark:text-gray-400">Loading transaction details...</p>
-          </div>
-        ) : error ? (
-          <div className="container-card py-12 text-center text-error-700 dark:text-error-500">
-            <p>{error}</p>
+      {isLoading ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading transaction details...</p>
+          </CardContent>
+        </Card>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-red-500 mb-4">Failed to load transaction details</p>
             <Button 
-              variant="secondary" 
-              size="sm" 
-              className="mt-4"
+              variant="outline"
+              onClick={() => refetch()}
+              className="mr-2"
+            >
+              Retry
+            </Button>
+            <Button 
+              variant="default"
               onClick={() => router.push('/transactions')}
             >
               Back to Transactions
             </Button>
-          </div>
-        ) : transaction ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <div className="container-card hover:border-gray-300 dark:hover:border-gray-700">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-brand-black dark:text-white">Payment Summary</h2>
-                    <p className="text-brand-gray dark:text-gray-400 text-sm mt-1">
-                      Reference: {transaction.reference}
-                    </p>
-                  </div>
-                  <div className="flex items-center">
-                    <span 
-                      className={
-                        transaction.status === 'completed' 
-                          ? 'badge badge-green' 
-                          : transaction.status === 'pending' 
-                          ? 'badge badge-yellow' 
-                          : transaction.status === 'processing'
-                          ? 'badge badge-blue'
-                          : 'badge badge-red'
-                      }
-                    >
-                      {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                      {statusLoading && (
-                        <span className="ml-2 inline-block animate-spin h-3 w-3 border-b border-current rounded-full"></span>
-                      )}
-                    </span>
-                    <button 
-                      onClick={refreshStatus}
-                      disabled={statusLoading}
-                      className="ml-2 text-brand-gray hover:text-brand-black dark:text-gray-400 dark:hover:text-white"
-                      title="Refresh status"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </button>
-                  </div>
+          </CardContent>
+        </Card>
+      ) : transaction ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Transaction Details Card */}
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle>Payment Summary</CardTitle>
+                  <CardDescription>
+                    Reference: {transaction.transaction_id}
+                  </CardDescription>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Amount</p>
-                    <p className="text-xl font-bold text-brand-black dark:text-white">
-                      {formatCurrency(transaction.amount)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Fee</p>
-                    <p className="text-xl font-bold text-brand-black dark:text-white">
-                      {formatCurrency(transaction.fee)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>
-                    <p className="text-xl font-bold text-brand-black dark:text-white">
-                      {formatCurrency(transaction.totalAmount)}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
-                    <p className="text-brand-black dark:text-white">
-                      {formatDate(transaction.createdAt)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-6 mt-6">
-                  <h3 className="font-medium mb-4 text-brand-black dark:text-white">Payment Details</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-brand-gray dark:text-gray-400">Narration</span>
-                      <span className="text-brand-black dark:text-white">{transaction.narration}</span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="text-brand-gray dark:text-gray-400">Beneficiary ID</span>
-                      <span className="text-brand-black dark:text-white">{transaction.beneficiaryId}</span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="text-brand-gray dark:text-gray-400">Created At</span>
-                      <span className="text-brand-black dark:text-white">{formatDate(transaction.createdAt)}</span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="text-brand-gray dark:text-gray-400">Updated At</span>
-                      <span className="text-brand-black dark:text-white">{formatDate(transaction.updatedAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-1">
-              <div className="container-card hover:border-gray-300 dark:hover:border-gray-700">
-                <h3 className="font-medium mb-4 text-brand-black dark:text-white">Quick Actions</h3>
-                <Link href="/payment" className="w-full">
+                <div className="flex items-center">
+                  <Badge variant={getStatusBadgeVariant(transaction.status)}>
+                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                  </Badge>
                   <Button 
-                    size="md" 
-                    fullWidth 
-                    className="mb-2 bg-brand-black text-white dark:bg-white dark:text-brand-black hover:bg-brand-blue-gray hover:text-white dark:hover:bg-brand-blue-gray dark:hover:text-white"
+                    variant="ghost" 
+                    size="icon"
+                    className="ml-2"
+                    onClick={() => refreshStatusMutation.mutate()}
+                    disabled={refreshStatusMutation.isPending}
                   >
-                    <span className="flex items-center justify-center">
-                      Send Payment
-                      <svg 
-                        className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24" 
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                        />
-                      </svg>
-                    </span>
+                    <RefreshCw className={`h-4 w-4 ${refreshStatusMutation.isPending ? 'animate-spin' : ''}`} />
+                    <span className="sr-only">Refresh status</span>
                   </Button>
-                </Link>
-                <Button 
-                  variant="secondary" 
-                  size="md" 
-                  fullWidth
-                  className="mb-2 dark:text-white hover:bg-white hover:text-black dark:hover:text-white dark:bg-black border border-white dark:border dark:border-black"
-                  onClick={() => router.push('/transactions')}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Amount Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="shadow-none border-gray-200 dark:border-gray-800">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">
+                        {formatCurrency(transaction.amount)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="shadow-none border-gray-200 dark:border-gray-800">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Date</p>
+                      <p className="text-gray-900 dark:text-white">
+                        {formatDate(transaction.created_at)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Transaction Details */}
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-4">Transaction Details</h3>
+                  <Separator className="mb-4" />
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Transaction ID</span>
+                      <span className="text-gray-900 dark:text-white font-medium">{transaction.transaction_id}</span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Status</span>
+                      <Badge variant={getStatusBadgeVariant(transaction.status)}>
+                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Created</span>
+                      <span className="text-gray-900 dark:text-white">{formatDate(transaction.created_at)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Updated</span>
+                      <span className="text-gray-900 dark:text-white">{formatDate(transaction.updated_at)}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions Card */}
+          <div className="md:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  className="w-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                  asChild
                 >
-                  View History
+                  <Link href="/payment">
+                    <Send className="mr-2 h-4 w-4" />
+                    New Payment
+                  </Link>
                 </Button>
-              </div>
-            </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={printReceipt}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Receipt
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={downloadReceipt}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Receipt
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Need Help?</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  If you have any questions about this transaction, our support team is available 24/7 to assist you.
+                </p>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/support">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Contact Support
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-        ) : (
-          <div className="py-12 text-center text-brand-gray dark:text-gray-400">
-            <p>No transactions found</p>
-            <Link href="/payment" className="mt-4 inline-block">
-              <Button size="sm">Send your first payment</Button>
-            </Link>
-          </div>
-        )}
-      </Container>
-    </main>
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Transaction not found</p>
+            <Button 
+              onClick={() => router.push('/transactions')}
+            >
+              View All Transactions
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 } 

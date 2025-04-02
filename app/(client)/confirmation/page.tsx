@@ -1,200 +1,276 @@
-import React from 'react';
-import Container from '../components/Container';
-import Button from '../components/Button';
-import Link from 'next/link';
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import { initiateTransferPayout, getSourceOfFunds, getPurposeCodes } from '@/lib/api-calls';
+import { transferPayoutSchema, getSourceOfFundsSchema, getPurposeCodesSchema } from '@/lib/dto';
+import { z } from 'zod';
+import { toast } from 'sonner';
+import { usePaymentContext } from '@/context/payment-context';
+import { getAuthToken } from '@/lib/helper-function';
+
+const formSchema = transferPayoutSchema.omit({ token: true });
 
 export default function ConfirmationPage() {
-  // Mock transaction data - in a real app, this would come from state management or API
-  const transactionDetails = {
-    id: 'TRX123456789',
-    date: new Date().toISOString(),
-    amount: 1000,
-    exchangeRate: 1550,
-    nairaAmount: 1550000,
-    recipientName: 'John Doe',
-    bankName: 'Chase Bank',
-    accountNumber: '****5678',
-    estimatedDelivery: '1-2 business days',
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const token = getAuthToken();
+  const { selectedBeneficiary, exchangeRateData, conversionData } = usePaymentContext();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      currency: selectedBeneficiary?.destination_currency || '',
+      amount: conversionData?.destinationAmount || 0,
+      purpose_code: '',
+      source_of_funds: '',
+      beneficiary_id: selectedBeneficiary?._id || '',
+      environment: 'test',
+    },
+  });
+
+  const { data: sourceOfFundsData } = useQuery({
+    queryKey: ['sourceOfFunds'],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required');
+      const input: z.infer<typeof getSourceOfFundsSchema> = { token };
+      const response = await getSourceOfFunds(input);
+      if (response.error) throw new Error(response.error.message);
+      return response.data;
+    },
+    enabled: !!token,
+  });
+
+  const { data: purposeCodesData } = useQuery({
+    queryKey: ['purposeCodes'],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required');
+      const input: z.infer<typeof getPurposeCodesSchema> = { token };
+      const response = await getPurposeCodes(input);
+      if (response.error) throw new Error(response.error.message);
+      return response.data;
+    },
+    enabled: !!token,
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      if (!token) throw new Error('Authentication required');
+      const input = { ...data, token };
+      const response = await initiateTransferPayout(input);
+      if (response.error) throw new Error(response.error.message);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Transfer initiated successfully');
+      router.push('/transactions');
+    },
+    onError: (error: Error) => {
+      setError(error.message);
+      toast.error('Failed to initiate transfer');
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof formSchema>) => {
+    transferMutation.mutate(data);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-success-100 p-4 dark:from-black dark:to-success">
+  if (!selectedBeneficiary) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-black p-4">
+        <div className="max-w-4xl mx-auto">
+          <Alert variant="destructive">
+            <AlertDescription>No beneficiary selected. Please go back and select a beneficiary.</AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
+  }
 
-      <Container maxWidth="full">
-        {/* Success Animation */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-success-500 to-primary-600 mb-6 shadow-lg">
-            <svg 
-              className="w-10 h-10 text-white" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M5 13l4 4L19 7" 
-              />
-            </svg>
-          </div>
-          
-          <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-gradient">Payment Successful!</h1>
-          <p className="text-brand-gray dark:text-white">
-            Your international payment has been processed
+  return (
+    <div className="min-h-screen bg-white dark:bg-black p-4">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
+            Confirm Transfer
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            Review your transfer details before proceeding
           </p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Transaction Details Card */}
-          <div className="container-card card-success md:col-span-1 shadow-md">
-            <h2 className="text-lg font-medium mb-4 text-success-700 border-1 pb-2 dark:text-white">Transaction Details</h2>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-brand-gray dark:text-white">Transaction ID</span>
-                <span className="font-medium font-mono badge badge-blue dark:text-black">{transactionDetails.id}</span>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <Card className="border-gray-200 dark:border-gray-800">
+          <CardHeader>
+            <CardTitle>Transfer Details</CardTitle>
+            <CardDescription>
+              Please review and confirm your transfer information
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Beneficiary</h3>
+                  <p className="mt-1 text-lg font-medium">{selectedBeneficiary.beneficiary_name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedBeneficiary.beneficiary_account_number}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Amount</h3>
+                  <p className="mt-1 text-lg font-medium">
+                    {conversionData?.destinationAmount.toLocaleString()} {selectedBeneficiary.destination_currency}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Exchange Rate: {exchangeRateData?.data.amount}
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Destination</h3>
+                  <p className="mt-1 text-lg font-medium">{selectedBeneficiary.destination_country}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {selectedBeneficiary.beneficiary_city}, {selectedBeneficiary.beneficiary_state}
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Delivery Time</h3>
+                  <p className="mt-1 text-lg font-medium">1-2 Business Days</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Estimated delivery time</p>
+                </div>
               </div>
-              
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-brand-gray dark:text-white">Date</span>
-                <span className="font-medium">
-                  {new Date(transactionDetails.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Amount Sent</span>
-                <span className="font-medium text-primary-700">${transactionDetails.amount.toLocaleString()}</span>
-              </div>
-              
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Exchange Rate</span>
-                <span className="font-medium">₦{transactionDetails.exchangeRate.toLocaleString()} / $1</span>
-              </div>
-              
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Naira Paid</span>
-                <span className="font-medium text-primary-700">₦{transactionDetails.nairaAmount.toLocaleString()}</span>
-              </div>
-              
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Recipient</span>
-                <span className="font-medium">{transactionDetails.recipientName}</span>
-              </div>
-              
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Bank</span>
-                <span className="font-medium">{transactionDetails.bankName}</span>
-              </div>
-              
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Account Number</span>
-                <span className="font-medium">{transactionDetails.accountNumber}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Estimated Delivery</span>
-                <span className="font-medium badge badge-green">{transactionDetails.estimatedDelivery}</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Receipt Options */}
-          <div className="md:col-span-1 flex flex-col">
-            <div className="container-card h-full flex flex-col shadow-md">
-              <h2 className="text-lg font-medium mb-4 text-primary-700 border-b pb-2">Receipt</h2>
-              
-              <div className="space-y-4 flex-grow">
-                <Button 
-                  variant="secondary" 
-                  fullWidth
-                  className="flex items-center justify-center hover-lift shadow-sm bg-black dark:bg-white text-white dark:text-black"
-                >
-                  <svg 
-                    className="w-5 h-5 mr-2  text-white dark:text-black" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" 
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="source_of_funds"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Source of Funds</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select source of funds" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {sourceOfFundsData?.data.map((source) => (
+                                <SelectItem key={source} value={source}>
+                                  {source}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </svg>
-                  Download Receipt
-                </Button>
-                
-                <Button 
-                  variant="secondary" 
-                  fullWidth
-                  className="flex items-center justify-center hover-lift shadow-sm bg-white dark:bg-brand-black text-brand-gray dark:text-white "
-                >
-                  <svg 
-                    className="w-5 h-5 mr-2 text-brand-gray dark:text-white" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
+
+                    <FormField
+                      control={form.control}
+                      name="purpose_code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Purpose of Transfer</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select purpose" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {purposeCodesData?.data && Object.entries(purposeCodesData.data).map(([code, description]) => (
+                                <SelectItem key={code} value={code}>
+                                  {description}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </svg>
-                  Email Receipt
-                </Button>
-              </div>
-              
-              <div className="mt-auto pt-6">
-                <Link href="/payment">
-                  <Button 
-                    fullWidth 
-                    size="lg"
-                    className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md hover-lift group transition-all"
-                  >
-                    <span className="flex items-center justify-center">
-                      Make Another Payment
-                      <svg 
-                        className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24" 
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                        />
-                      </svg>
-                    </span>
-                  </Button>
-                </Link>
-              </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.back()}
+                      className="border-gray-200 dark:border-gray-800"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
+                      disabled={transferMutation.isPending}
+                    >
+                      {transferMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        'Confirm Transfer'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </div>
-          </div>
-        </div>
-        
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Thank you for choosing <span className="text-primary-600 font-medium">Ohh.tc</span> for your international payments.
-          </p>
-        </div>
-      </Container>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-900">
+          <CardHeader>
+            <CardTitle className="text-lg">Important Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 dark:text-gray-400">
+              Please ensure all information is correct before confirming your transfer. 
+              Once confirmed, the transfer cannot be cancelled.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 

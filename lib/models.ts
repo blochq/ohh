@@ -467,11 +467,17 @@ export interface IResolveAccountResponse {
 }
 
 export interface ITransaction {
-  transaction_id: string;
-  amount: number;
+  _id: string;
+  organization_id: string;
+  tracking_id: string;
+  currency: string;
   status: string;
+  type: string;
+  offer_rate: number;
   created_at: string;
   updated_at: string;
+  invoice?: string;
+  user_id: string;
 }
 
 
@@ -535,5 +541,127 @@ export interface ITransferFeeResponse {
   message: string;
 }
 
+
+
+export interface ICustomerUpgradeResponse {
+  success: boolean;
+  data: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    status: string;
+    kyc_tier: string;
+    dob: string;
+    gender: string;
+    place_of_birth: string;
+    updated_at: string;
+  };
+  message: string;
+}
+
+export interface IKycIdentityResponse {
+  success: boolean;
+  data: {
+    id: string;
+    status: string;
+    verification_status: string;
+    verification_message: string;
+    customer_id: string;
+    id_type: string;
+    id_number: string;
+    created_at: string;
+  };
+  message: string;
+}
+
+export interface IUpgradeTierResponse {
+  success: boolean;
+  data: {
+    id: string;
+    kyc_tier: string;
+    status: string;
+    updated_at: string;
+  };
+  message: string;
+}
+
+export interface IBeneficiary {
+  _id: string;
+  currency: string;
+  destination_country: string;
+  beneficiary_name: string;
+  beneficiary_address: string;
+  beneficiary_city: string;
+  beneficiary_account_type: string;
+  beneficiary_state: string;
+  beneficiary_postcode: string;
+  beneficiary_account_number: string;
+  destination_currency: string;
+  payout_method: string;
+  routing_code_type1?: string;
+  routing_code_value1?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IBeneficiaryResponse {
+  success: boolean;
+  data: IBeneficiary;
+  message: string;
+}
+
+export interface IBeneficiariesResponse {
+  success: boolean;
+  data: IBeneficiary[];
+  message: string;
+}
+
+export interface ITransferPayoutResponse {
+  success: boolean;
+  data: {
+    beneficiary_account: string;
+    beneficiary_name: string;
+    provider_ref: string;
+  };
+  message: string;
+}
+
+export interface ISourceOfFundsResponse {
+  success: boolean;
+  data: string[];
+  message: string;
+}
+
+export interface IPurposeCodesResponse {
+  success: boolean;
+  data: Record<string, string>;
+  message: string;
+}
+
+export interface ISupportedCurrency {
+  _id: string;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ISupportedCurrenciesResponse {
+  success: boolean;
+  data: ISupportedCurrency[];
+  message: string;
+}
+
+export interface ISupportedCountry {
+  code: string;
+  name: string;
+  currency: string;
+}
+
+export interface ISupportedCountriesResponse {
+  success: boolean;
+  data: Record<string, string>;
+  message: string;
+}
 
 

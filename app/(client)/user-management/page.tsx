@@ -48,19 +48,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
-import { createUser, createCustomer } from '@/lib/api-calls';
+import { createUser } from '@/lib/api-calls';
 import { getAuthToken } from '@/lib/helper-function';
-import { Plus, UserRound, Users, Loader2, Search, RefreshCw } from 'lucide-react';
-import { CreateUserFormData, createUserSchema, SignupFormData, signupSchema } from '@/lib/dto';
+import {  UserRound, Users, Loader2, Search, RefreshCw } from 'lucide-react';
+import { CreateUserFormData, createUserSchema } from '@/lib/dto';
 
 
 
@@ -97,7 +89,7 @@ export default function UserManagement() {
   const [selectedTab, setSelectedTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [openUserDialog, setOpenUserDialog] = useState(false);
-  const [openCustomerDialog, setOpenCustomerDialog] = useState(false);
+  // const [openCustomerDialog, setOpenCustomerDialog] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
 
@@ -167,17 +159,17 @@ export default function UserManagement() {
   });
 
 
-  const customerForm = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      First_name: '',
-      Last_name: '',
-      Email: '',
-      Phone_number: '',
-      Password: '',
-      Customer_type: 'personal'
-    }
-  });
+  // const customerForm = useForm<SignupFormData>({
+  //   resolver: zodResolver(signupSchema),
+  //   defaultValues: {
+  //     First_name: '',
+  //     Last_name: '',
+  //     Email: '',
+  //     Phone_number: '',
+  //     Password: '',
+  //     Customer_type: 'personal'
+  //   }
+  // });
 
   // Mutation for creating a user
   const createUserMutation = useMutation({
@@ -208,40 +200,40 @@ export default function UserManagement() {
     }
   });
 
-  // Mutation for creating a customer
-  const createCustomerMutation = useMutation({
-    mutationFn: async (data: SignupFormData) => {
-      const response = await createCustomer(data);
-      if (response.error) throw new Error(response.error.message);
-      if (response.validationErrors && response.validationErrors.length > 0) {
-        throw new Error(response.validationErrors[0].message);
-      }
-      return response.data;
-    },
-    onSuccess: () => {
-      toast.success('Customer created successfully');
-      setOpenCustomerDialog(false);
-      customerForm.reset();
+  // // Mutation for creating a customer
+  // const createCustomerMutation = useMutation({
+  //   mutationFn: async (data: SignupFormData) => {
+  //     const response = await createCustomer(data);
+  //     if (response.error) throw new Error(response.error.message);
+  //     if (response.validationErrors && response.validationErrors.length > 0) {
+  //       throw new Error(response.validationErrors[0].message);
+  //     }
+  //     return response.data;
+  //   },
+  //   onSuccess: () => {
+  //     toast.success('Customer created successfully');
+  //     setOpenCustomerDialog(false);
+  //     customerForm.reset();
      
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-    },
-    onError: (error) => {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Failed to create customer');
-      }
-    }
-  });
+  //     queryClient.invalidateQueries({ queryKey: ['customers'] });
+  //   },
+  //   onError: (error) => {
+  //     if (error instanceof Error) {
+  //       toast.error(error.message);
+  //     } else {
+  //       toast.error('Failed to create customer');
+  //     }
+  //   }
+  // });
 
   const onSubmitUserForm = (data: CreateUserFormData) => {
     createUserMutation.mutate(data);
   };
 
 
-  const onSubmitCustomerForm = (data: SignupFormData) => {
-    createCustomerMutation.mutate(data);
-  };
+  // const onSubmitCustomerForm = (data: SignupFormData ) => {
+  //   createCustomerMutation.mutate(data);
+  // };
 
   return (
     <div className="min-h-screen bg-white dark:bg-black p-4">
@@ -338,7 +330,7 @@ export default function UserManagement() {
               </DialogContent>
             </Dialog>
 
-            <Dialog open={openCustomerDialog} onOpenChange={setOpenCustomerDialog}>
+            {/* <Dialog open={openCustomerDialog} onOpenChange={setOpenCustomerDialog}>
               <DialogTrigger asChild>
                 <Button variant="default" className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
@@ -459,7 +451,7 @@ export default function UserManagement() {
                   </form>
                 </Form>
               </DialogContent>
-            </Dialog>
+            </Dialog> */}
           </div>
         </div>
 

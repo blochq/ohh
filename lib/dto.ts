@@ -115,10 +115,120 @@ export const createAccountSchema = z.object({
 export type CreateAccountFormData = z.infer<typeof createAccountSchema>;
 
 export const getTransferFeeSchema = z.object({
-  token: z.string(),
   amount: z.number(),
+  token: z.string(),
 });
 
 export type GetTransferFeeFormData = z.infer<typeof getTransferFeeSchema>;
+
+export const getSingleTransactionSchema = z.object({
+  token: z.string(),
+  reference: z.string(),
+});
+
+export type GetSingleTransactionFormData = z.infer<typeof getSingleTransactionSchema>;
+
+export const getAllTransactionsSchema = z.object({
+  token: z.string(),
+});
+
+export type GetAllTransactionsFormData = z.infer<typeof getAllTransactionsSchema>;
+
+export const customerUpgradeSchema = z.object({
+  dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date format should be YYYY-MM-DD'),
+  gender: z.enum(['male', 'female']),
+  place_of_birth: z.string().min(2, 'Place of birth is required'),
+  image: z.string().optional(),
+  token: z.string(),
+  customer_id: z.string(),
+});
+
+export type CustomerUpgradeFormData = z.infer<typeof customerUpgradeSchema>;
+
+export const kycIdentitySchema = z.object({
+  country_code: z.string(),
+  dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date format should be YYYY-MM-DD'),
+  first_name: z.string().min(1, 'First name is required'),
+  gender: z.enum(['Male', 'Female']),
+  id_number: z.string().min(1, 'ID number is required'),
+  id_type: z.enum(['bvn', 'nin', 'passport', 'drivers_license']),
+  last_name: z.string().min(1, 'Last name is required'),
+  token: z.string(),
+  customer_id: z.string(),
+});
+
+export type KycIdentityFormData = z.infer<typeof kycIdentitySchema>;
+
+export const upgradeTierSchema = z.object({
+  token: z.string(),
+  customer_id: z.string(),
+});
+
+export type UpgradeTierFormData = z.infer<typeof upgradeTierSchema>;
+
+export const createBeneficiarySchema = z.object({
+  currency: z.string(),
+  destination_country: z.string(),
+  beneficiary_name: z.string(),
+  beneficiary_address: z.string(),
+  beneficiary_city: z.string(),
+  beneficiary_account_type: z.string(),
+  beneficiary_state: z.string(),
+  beneficiary_postcode: z.string(),
+  beneficiary_account_number: z.string(),
+  destination_currency: z.string(),
+  payout_method: z.string(),
+  routing_code_type1: z.string().optional(),
+  routing_code_value1: z.string().optional(),
+  token: z.string(),
+});
+
+export type CreateBeneficiaryFormData = z.infer<typeof createBeneficiarySchema>;
+
+export const getBeneficiaryByIdSchema = z.object({
+  token: z.string(),
+  beneficiary_id: z.string(),
+});
+
+export type GetBeneficiaryByIdFormData = z.infer<typeof getBeneficiaryByIdSchema>;
+
+export const transferPayoutSchema = z.object({
+  currency: z.string(),
+  amount: z.number(),
+  purpose_code: z.string(),
+  source_of_funds: z.string(),
+  beneficiary_id: z.string(),
+  environment: z.string(),
+  token: z.string(),
+});
+
+export type TransferPayoutFormData = z.infer<typeof transferPayoutSchema>;
+
+export const getSourceOfFundsSchema = z.object({
+  token: z.string(),
+});
+
+export type GetSourceOfFundsFormData = z.infer<typeof getSourceOfFundsSchema>;
+
+export const getPurposeCodesSchema = z.object({
+  token: z.string(),
+});
+
+export type GetPurposeCodesFormData = z.infer<typeof getPurposeCodesSchema>;
+
+export const getSupportedCurrenciesSchema = z.object({
+  token: z.string(),
+});
+
+export type GetSupportedCurrenciesFormData = z.infer<typeof getSupportedCurrenciesSchema>;
+
+export const getSupportedCountriesSchema = z.object({
+  token: z.string(),
+  account_id: z.string(),
+});
+
+export type GetSupportedCountriesFormData = z.infer<typeof getSupportedCountriesSchema>;
+
+
 
 

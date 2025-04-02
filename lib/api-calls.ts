@@ -1,5 +1,5 @@
-import { collectionAccountSchema, createAccountSchema, createUserSchema, exchangeRateSchema, getSingleCustomerSchema, getSingleUserSchema, getTransferFeeSchema, loginSchema, resolveAccountSchema, signupSchema, tokenSchema, transferSchema, verifyPaymentSchema } from "./dto";
-import { IAccountResponse, IApiError, IApiResponse, IBankListResponse, ICollectionAccountResponse, ICreateUserResponse, IExchangeRateResponse, ILoginResponse, IResolveAccountResponse, ITransferFeeResponse, ITransferResponse, IValidationError, IVerifyPaymentResponse } from "@/lib/models";
+import { collectionAccountSchema, createAccountSchema, createUserSchema, customerUpgradeSchema, exchangeRateSchema, getAllTransactionsSchema, getSingleCustomerSchema, getSingleTransactionSchema, getSingleUserSchema, getTransferFeeSchema, kycIdentitySchema, loginSchema, resolveAccountSchema, signupSchema, tokenSchema, transferSchema, upgradeTierSchema, verifyPaymentSchema, createBeneficiarySchema, getBeneficiaryByIdSchema, transferPayoutSchema, getSourceOfFundsSchema, getPurposeCodesSchema, getSupportedCurrenciesSchema, getSupportedCountriesSchema } from "./dto";
+import { IAccountResponse, IApiError, IApiResponse, IBankListResponse, ICollectionAccountResponse, ICreateUserResponse, ICustomerUpgradeResponse, IExchangeRateResponse, IKycIdentityResponse, ILoginResponse, IResolveAccountResponse, ITransferFeeResponse, ITransferResponse, ITransactionResponse, IUpgradeTierResponse, IValidationError, IVerifyPaymentResponse, IBeneficiaryResponse, IBeneficiariesResponse, ITransferPayoutResponse, ISourceOfFundsResponse, IPurposeCodesResponse, ISupportedCurrenciesResponse, ISupportedCountriesResponse } from "@/lib/models";
 import { z } from "zod";
 
 
@@ -174,7 +174,8 @@ export const createAccount = async (input: z.infer<typeof createAccountSchema>):
 
 export const getTransferFee = async (input: z.infer<typeof getTransferFeeSchema>): Promise<IApiResponse<ITransferFeeResponse>> => {
   return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/transfers/fee`, {
-    method: "GET",
+    method: "POST",
+    body: JSON.stringify(input),
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${input.token}`,
@@ -183,8 +184,8 @@ export const getTransferFee = async (input: z.infer<typeof getTransferFeeSchema>
 };
 
 
-export const getAllCustomers = async (input: z.infer<typeof tokenSchema>): Promise<IApiResponse<ICreateUserResponse>> => {
-  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/customers`, {
+export const getAllTransactions = async (input: z.infer<typeof getAllTransactionsSchema>): Promise<IApiResponse<ITransactionResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/payout", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -193,4 +194,134 @@ export const getAllCustomers = async (input: z.infer<typeof tokenSchema>): Promi
   }));
 };
 
+export const getSingleTransaction = async (input: z.infer<typeof getSingleTransactionSchema>): Promise<IApiResponse<ITransactionResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/transactions/reference/${input.reference}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
 
+export const upgradeCustomer = async (input: z.infer<typeof customerUpgradeSchema>): Promise<IApiResponse<ICustomerUpgradeResponse>> => {
+  const { token, customer_id, ...data } = input;
+  
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/customers/upgrade/${customer_id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  }));
+};
+
+export const verifyKycIdentity = async (input: z.infer<typeof kycIdentitySchema>): Promise<IApiResponse<IKycIdentityResponse>> => {
+  const { token, customer_id, ...data } = input;
+  
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/kyc/identity/${customer_id}`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  }));
+};
+
+export const upgradeTier = async (input: z.infer<typeof upgradeTierSchema>): Promise<IApiResponse<IUpgradeTierResponse>> => {
+  const { token, customer_id } = input;
+  
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/customers/upgrade/t2/${customer_id}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  }));
+};
+
+export const createBeneficiary = async (input: z.infer<typeof createBeneficiarySchema>): Promise<IApiResponse<IBeneficiaryResponse>> => {
+  const { token, ...data } = input;
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/beneficiaries", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  }));
+};
+
+export const getBeneficiaries = async (input: z.infer<typeof tokenSchema>): Promise<IApiResponse<IBeneficiariesResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/beneficiaries", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
+
+export const getBeneficiaryById = async (input: z.infer<typeof getBeneficiaryByIdSchema>): Promise<IApiResponse<IBeneficiaryResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/beneficiaries/${input.beneficiary_id}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
+
+export const initiateTransferPayout = async (input: z.infer<typeof transferPayoutSchema>): Promise<IApiResponse<ITransferPayoutResponse>> => {
+  const { token, ...data } = input;
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/transfers/payouts", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  }));
+};
+
+export const getSourceOfFunds = async (input: z.infer<typeof getSourceOfFundsSchema>): Promise<IApiResponse<ISourceOfFundsResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/transfers/source-of-fund", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
+
+export const getPurposeCodes = async (input: z.infer<typeof getPurposeCodesSchema>): Promise<IApiResponse<IPurposeCodesResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/transfers/purpose-codes", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
+
+export const getSupportedCurrencies = async (input: z.infer<typeof getSupportedCurrenciesSchema>): Promise<IApiResponse<ISupportedCurrenciesResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/otc/supported-currencies", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
+
+export const getSupportedCountries = async (input: z.infer<typeof getSupportedCountriesSchema>): Promise<IApiResponse<ISupportedCountriesResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/all-currencies", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
