@@ -177,7 +177,7 @@ export default function Dashboard() {
                 variant="outline" 
                 className="w-full py-5 mt-4 hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700 transition-transform duration-200 rounded-xl"
               >
-                <Link href="/beneficiaries/new">
+                <Link href="/beneficiary/new">
                   <span className="flex items-center justify-center text-base">
                     Add New Recipient
                     <ArrowRight className="ml-2 h-5 w-5" />
