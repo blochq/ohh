@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/context/session-context';
 import { useMutation } from '@tanstack/react-query';
@@ -40,17 +40,12 @@ import {
 
 export default function TierUpgradePage() {
   const router = useRouter();
-  const { isAuthenticated, user, customer, refreshSession } = useSession();
+  const { isAuthenticated, user, refreshSession } = useSession();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
-  // Redirect if not authenticated
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
-  }
-
-  const userId = customer?.id || user?._id || '';
-  const currentTier = customer?.tier || 1;
+  // Get user ID and current tier from user data
+  const userId = user?._id || '';
+  const currentTier = user?.kyc_tier === "2" ? 2 : 1;
   
   // Handle tier upgrade mutation
   const upgradeMutation = useMutation({
@@ -92,6 +87,18 @@ export default function TierUpgradePage() {
 
   // Check if upgrade is allowed (only T1 can upgrade to T2)
   const canUpgrade = currentTier === 1;
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [isAuthenticated, router]);
+
+  // Early return if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Tier features
   const tierFeatures = {

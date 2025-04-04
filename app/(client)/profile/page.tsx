@@ -30,13 +30,13 @@ import {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const {  user, logout } = useSession();
+  const { isAuthenticated, user, logout } = useSession();
   const [customer, setCustomer] = useState<ICustomer | null>(null);
   
   // Use kyc_tier instead of tier
   const tierLevel = user?.kyc_tier === "2" ? 2 : 1;
-
-    
+     
+  // Generate customer data from user info
   useEffect(() => {
     if (user) {
       setCustomer({
@@ -61,20 +61,29 @@ export default function ProfilePage() {
     router.push('/auth/login');
   };
 
-
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [isAuthenticated, router]);
+ 
+  // Early return if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
-    <div className="max-w-5xl mx-auto  space-y-8 relative z-10 ">
-
+    <div className="max-w-5xl mx-auto space-y-8 relative z-10">
        {/* Background pattern */}
        <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
         <div className="absolute top-[50%] right-[20%] w-[30%] h-[30%] bg-gray-200 dark:bg-gray-800 opacity-30 rounded-full blur-3xl"></div>
         <div className="absolute bottom-[10%] left-[30%] w-[40%] h-[30%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
       </div>
-      <div className="max-w-4xl mx-auto space-y-8 ">
+      <div className="max-w-4xl mx-auto space-y-8">
         <div className='text-center'>
-          <h1 className="text-3xl font-bold ">
+          <h1 className="text-3xl font-bold">
             My Profile
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">

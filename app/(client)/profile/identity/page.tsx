@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/context/session-context';
 import { useMutation } from '@tanstack/react-query';
@@ -9,7 +9,6 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { verifyKycIdentity } from '@/lib/api-calls';
-import { kycIdentitySchema } from '@/lib/dto';
 import { getAuthToken } from '@/lib/helper-function';
 
 import {
@@ -54,10 +53,20 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-type FormValues = z.infer<typeof kycIdentitySchema>;
+// Custom type to include image fields
+type IdentityFormValues = {
+  id_type: string;
+  id_number: string;
+  front_image?: string;
+  back_image?: string;
+  country_code?: string;
+  dob?: string;
+  first_name?: string;
+  gender?: 'Male' | 'Female';
+  last_name?: string;
+};
 
 const ID_TYPES = [
   { value: 'passport', label: 'International Passport' },
@@ -68,41 +77,50 @@ const ID_TYPES = [
 
 export default function KycIdentityPage() {
   const router = useRouter();
-  const { isAuthenticated, user, customer, refreshSession } = useSession();
+  const { isAuthenticated, user, refreshSession } = useSession();
   const [idFrontImage, setIdFrontImage] = useState<string | null>(null);
   const [idBackImage, setIdBackImage] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [formData, setFormData] = useState<Omit<FormValues, 'token' | 'customer_id'> | null>(null);
+  const [formData, setFormData] = useState<IdentityFormValues | null>(null);
   
-  // Redirect if not authenticated
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
-  }
-
-  const userId = customer?.id || user?._id || '';
+  // Get user ID
+  const userId = user?._id || '';
   
   // Initialize form with default values
-  const form = useForm<FormValues>({
-    resolver: zodResolver(kycIdentitySchema.omit({ token: true, customer_id: true })),
+  const form = useForm<IdentityFormValues>({
+    resolver: zodResolver(
+      z.object({
+        id_type: z.string().min(1, "ID type is required"),
+        id_number: z.string().min(1, "ID number is required"),
+        front_image: z.string().optional(),
+        back_image: z.string().optional(),
+      })
+    ),
     defaultValues: {
+      id_type: '',
       id_number: '',
-      back_image: '',
     },
   });
 
   // Handle KYC verification mutation
   const kycMutation = useMutation({
-    mutationFn: (data: Omit<FormValues, 'token' | 'customer_id'>) => {
+    mutationFn: (data: IdentityFormValues) => {
       const token = getAuthToken();
       if (!token) {
         throw new Error('Authentication required');
       }
       
+      // Build the full data object required by the API
       return verifyKycIdentity({
         ...data,
         token,
         customer_id: userId,
+        country_code: 'NG', // Default to Nigeria
+        dob: user?.date_of_birth || '1990-01-01', // Use user's DOB or default
+        first_name: user?.first_name || user?.full_name?.split(' ')[0] || '', 
+        last_name: user?.last_name || user?.full_name?.split(' ')[1] || '',
+        gender: 'Male', // Default gender
+        id_type: 'passport',
       });
     },
     onSuccess: (response) => {
@@ -120,15 +138,17 @@ export default function KycIdentityPage() {
   });
 
   // Handle form submission
-  const onSubmit = (data: Omit<FormValues, 'token' | 'customer_id'>) => {
+  const onSubmit = (data: IdentityFormValues) => {
+    const updatedData = { ...data };
+    
     if (idFrontImage) {
-      data.front_image = idFrontImage;
+      updatedData.front_image = idFrontImage;
     }
     if (idBackImage) {
-      data.back_image = idBackImage;
+      updatedData.back_image = idBackImage;
     }
     
-    setFormData(data);
+    setFormData(updatedData);
     setShowConfirmDialog(true);
   };
 
@@ -139,6 +159,18 @@ export default function KycIdentityPage() {
       setShowConfirmDialog(false);
     }
   };
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [isAuthenticated, router]);
+
+  // Early return if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Mock image upload functions
   const handleFrontImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
