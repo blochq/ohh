@@ -49,6 +49,8 @@ export default function PaymentPage() {
   const [supportedCountries, setSupportedCountries] = useState<ISupportedCountry[]>([]);
   const [supportedCurrencies, setSupportedCurrencies] = useState<ISupportedCurrency[]>([]);
   
+  const resultsRef = React.useRef<HTMLDivElement>(null);
+  
   const {
     exchangeRateData,
     setExchangeRateData,
@@ -428,7 +430,7 @@ export default function PaymentPage() {
               <div className="pt-4">
                 <Button
                   type="submit"
-                  className="w-full bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
+                  className="w-full py-5 mt-4  bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
                   disabled={exchangeRateMutation.isPending}
                 >
                   {exchangeRateMutation.isPending ? (

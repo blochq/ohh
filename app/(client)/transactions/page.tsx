@@ -9,13 +9,6 @@ import { getAllTransactionsSchema } from '@/lib/dto';
 import { z } from 'zod';
 import { formatCurrency, getAuthToken } from '@/lib/helper-function';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -122,19 +115,27 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black p-6">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto  space-y-8 relative z-10 ">
+      {/* Background pattern */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute top-[50%] right-[20%] w-[30%] h-[30%] bg-gray-200 dark:bg-gray-800 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[10%] left-[30%] w-[40%] h-[30%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
-              Transaction History
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              View all your international payments
-            </p>
-          </div>
-          <Button asChild className="bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-black dark:text-white">
+            Transaction History
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            View and manage all your international payments
+          </p>
+        </div>
+
+        <div className="flex justify-end mb-6">
+          <Button asChild className="bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 rounded-xl">
             <Link href="/payment">
               <Send className="mr-2 h-4 w-4" />
               New Payment
@@ -143,14 +144,14 @@ export default function TransactionsPage() {
         </div>
 
         {/* Transactions Table */}
-        <Card className="border border-gray-200 dark:border-gray-800">
-          <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
-            <CardDescription>
+        <div className=" backdrop-blur-sm bg-white/70 dark:bg-black/70 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <div className="p-6 pb-4">
+            <h2 className="text-2xl font-bold text-black dark:text-white">Recent Transactions</h2>
+            <p className="text-gray-600 dark:text-gray-400">
               Your payment history and status updates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div className="p-6 pt-0">
             {isLoading ? (
               <div className="py-12 text-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 dark:border-gray-100 mx-auto"></div>
@@ -160,33 +161,37 @@ export default function TransactionsPage() {
               <div className="py-12 text-center">
                 <AlertCircle className="h-10 w-10 text-gray-900 dark:text-gray-100 mx-auto mb-2" />
                 <p className="text-gray-800 dark:text-gray-200 mb-4">Failed to load transactions</p>
-                <Button onClick={() => refetch()} variant="outline" size="sm" className="border-gray-200 dark:border-gray-800">
+                <Button onClick={() => refetch()} variant="outline" size="sm" className="border-gray-200 dark:border-gray-800 rounded-lg">
                   Retry
                 </Button>
               </div>
             ) : transactions.length > 0 ? (
               <>
-                <div className="rounded-md border border-gray-200 dark:border-gray-800">
+                <div className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-gray-200 dark:border-gray-800">
-                        <TableHead>Date</TableHead>
-                        <TableHead>Tracking ID</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                      <TableRow className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800">
+                        <TableHead className="font-medium text-gray-700 dark:text-gray-300">Date</TableHead>
+                        <TableHead className="font-medium text-gray-700 dark:text-gray-300">Tracking ID</TableHead>
+                        <TableHead className="font-medium text-gray-700 dark:text-gray-300">Amount</TableHead>
+                        <TableHead className="font-medium text-gray-700 dark:text-gray-300">Status</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {transactions.map((transaction) => (
-                        <TableRow key={transaction._id} className="border-gray-200 dark:border-gray-800">
-                          <TableCell className="font-medium">
+                        <TableRow 
+                          key={transaction._id} 
+                          className="border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/20 transition-colors cursor-pointer"
+                          onClick={() => handleTransactionClick(transaction)}
+                        >
+                          <TableCell className="font-medium text-black dark:text-white">
                             {formatDate(transaction.created_at)}
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-400">
+                          <TableCell className="text-gray-600 dark:text-gray-400 font-mono text-sm">
                             {transaction.tracking_id}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-black dark:text-white font-semibold">
                             {formatCurrency(transaction.offer_rate/100)}
                           </TableCell>
                           <TableCell>
@@ -198,8 +203,7 @@ export default function TransactionsPage() {
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => handleTransactionClick(transaction)}
-                              className="hover:bg-gray-100 dark:hover:bg-gray-900"
+                              className="hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                             >
                               View
                             </Button>
@@ -221,7 +225,7 @@ export default function TransactionsPage() {
                       size="sm"
                       disabled={page === 1}
                       onClick={handlePreviousPage}
-                      className="border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900"
+                      className="border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Previous
@@ -231,7 +235,7 @@ export default function TransactionsPage() {
                       size="sm"
                       disabled={page === totalPages}
                       onClick={handleNextPage}
-                      className="border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900"
+                      className="border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                     >
                       Next
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -240,31 +244,29 @@ export default function TransactionsPage() {
                 </div>
               </>
             ) : (
-              <div className="py-12 text-center">
+              <div className="py-12 text-center bg-gray-50/50 dark:bg-gray-900/20 rounded-xl border border-gray-200 dark:border-gray-800">
                 <p className="text-gray-600 dark:text-gray-400 mb-4">You haven&apos;t made any transactions yet</p>
-                <Button asChild className="bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100">
+                <Button asChild className="bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 rounded-xl">
                   <Link href="/payment">
                     Send your first payment
                   </Link>
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className="sm:max-w-[800px] bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle className="flex items-center justify-between text-black dark:text-white">
               <div className="flex items-center gap-2">
                 <Receipt className="h-5 w-5" />
                 <span>Transaction Details</span>
               </div>
-              
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
               Complete information about your transaction
             </DialogDescription>
           </DialogHeader>
@@ -282,7 +284,7 @@ export default function TransactionsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-lg border-gray-200 dark:border-gray-700"
                     onClick={() => window.open(selectedTransaction.invoice, '_blank')}
                   >
                     <Download className="h-4 w-4" />
@@ -291,58 +293,57 @@ export default function TransactionsPage() {
                 )}
               </div>
 
-              <Separator />
+              <Separator className="bg-gray-200 dark:bg-gray-800" />
 
               {/* Transaction Details Grid */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Transaction ID</p>
-                    <p className="text-sm font-mono">{selectedTransaction._id}</p>
+                    <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction._id}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tracking ID</p>
-                    <p className="text-sm font-mono">{selectedTransaction.tracking_id}</p>
+                    <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction.tracking_id}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Organization ID</p>
-                    <p className="text-sm font-mono">{selectedTransaction.organization_id}</p>
+                    <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction.organization_id}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">User ID</p>
-                    <p className="text-sm font-mono">{selectedTransaction.user_id}</p>
+                    <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction.user_id}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Type</p>
-                    <p className="text-sm capitalize">{selectedTransaction.type}</p>
+                    <p className="text-sm capitalize text-black dark:text-white">{selectedTransaction.type}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Currency</p>
-                    <p className="text-sm">{selectedTransaction.currency}</p>
+                    <p className="text-sm text-black dark:text-white">{selectedTransaction.currency}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Amount</p>
-                    <p className="text-sm font-semibold">
+                    <p className="text-sm font-semibold text-black dark:text-white">
                      {formatCurrency(selectedTransaction.offer_rate/100)}
                     </p>
                   </div>
-                  
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-gray-200 dark:bg-gray-800" />
 
               {/* Timestamps */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</p>
-                  <p className="text-sm">{formatDate(selectedTransaction.created_at)}</p>
+                  <p className="text-sm text-black dark:text-white">{formatDate(selectedTransaction.created_at)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</p>
-                  <p className="text-sm">{formatDate(selectedTransaction.updated_at)}</p>
+                  <p className="text-sm text-black dark:text-white">{formatDate(selectedTransaction.updated_at)}</p>
                 </div>
               </div>
             </div>

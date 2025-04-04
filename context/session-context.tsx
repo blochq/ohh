@@ -4,15 +4,15 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { getSingleUser, getSingleCustomer } from '@/lib/api-calls';
-import { IUser, ICustomer } from '@/lib/models';
+import {  getSingleCustomer } from '@/lib/api-calls';
+import { IUser } from '@/lib/models';
 
 
 interface SessionContextState {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: IUser | null;
-  customer: ICustomer | null;
+  customer: IUser | null;
   userName: string | null;
   userType: 'user' | 'customer' | 'owner' | null;
   logout: () => void;
@@ -52,7 +52,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     return { 
       token, 
-      type: type === 'user' || type === 'customer' || type === 'owner' ? type as 'user' | 'customer' | 'owner' : null,
+      type,
       userId,
       userName
     };
@@ -62,37 +62,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { token, type, userName } = getSessionInfo();
     setIsAuthenticated(!!token);
-    setUserType(type);
+    setUserType(type as 'user' | 'customer' | 'owner' | null);
     setUserName(userName || null);
   }, []);
 
 
-  const {
-    data: userData,
-    isLoading: isUserLoading,
-  } = useQuery({
-    queryKey: ['session-user', shouldRefetch],
-    queryFn: async () => {
-      const { token, type, userId } = getSessionInfo();
-      
-      if (!token || type !== 'user' || !userId) {
-        return null;
-      }
-
-      try {
-        const response = await getSingleUser({ token, user_id: userId });
-        if (response.error) throw new Error(response.error.message);
-        if (response.data?.data) {
-          return response.data.data as unknown as IUser;
-        }
-        return null;
-      } catch (error) {
-        console.error('Failed to fetch user data', error);
-        return null;
-      }
-    },
-    enabled: isAuthenticated && userType === 'user' || userType === 'owner',
-  });
 
 
   const {
@@ -101,17 +75,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   } = useQuery({
     queryKey: ['session-customer', shouldRefetch],
     queryFn: async () => {
-      const { token, type, userId } = getSessionInfo();
+      const { token, userId } = getSessionInfo();
       
-      if (!token || type !== 'customer' || !userId) {
+      if (!token || !userId) {
         return null;
       }
 
       try {
         const response = await getSingleCustomer({ token, customer_id: userId });
         if (response.error) throw new Error(response.error.message);
+
+        console.log("response.data?.data", response.data?.data)
         if (response.data?.data) {
-          return response.data.data as unknown as ICustomer;
+          return response.data.data 
         }
         return null;
       } catch (error) {
@@ -119,7 +95,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return null;
       }
     },
-    enabled: isAuthenticated && userType === 'customer',
+    enabled: isAuthenticated,
   });
 
   
@@ -146,15 +122,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
 
   const isLoading = 
-    (isAuthenticated && userType === 'user' && isUserLoading) || 
-    (isAuthenticated && userType === 'customer' && isCustomerLoading) ||
-    (isAuthenticated && userType === 'owner' && isUserLoading);
+    (isAuthenticated  && isCustomerLoading) 
 
 
   const contextValue: SessionContextState = {
     isAuthenticated,
     isLoading,
-    user: userData || null,
+    user: customerData || null,
     customer: customerData || null,
     userType,
     userName,

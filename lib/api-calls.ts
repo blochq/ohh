@@ -152,7 +152,7 @@ async function handleValidationResponse (response: Response) {
   };
 
 export const getSingleCustomer = async (input: z.infer<typeof getSingleCustomerSchema>): Promise<IApiResponse<ICreateUserResponse>> => {
-  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/customers/${input.customer_id}`, {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/users/${input.customer_id}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

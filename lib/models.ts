@@ -588,19 +588,30 @@ export interface IUpgradeTierResponse {
 
 export interface IBeneficiary {
   _id: string;
+  organization_id?: string;
+  user_id?: string;
+  environment?: string;
   currency: string;
-  destination_country: string;
+  beneficiary_account_number: string;
+  beneficiary_bank_code?: string;
+  client_legal_entity?: string;
+  beneficiary_account_type: string;
+  beneficiary_bank_account_type?: string;
+  beneficiary_country_code?: string;
+  beneficiary_contact_number?: string;
   beneficiary_name: string;
+  beneficiary_email?: string;
   beneficiary_address: string;
   beneficiary_city: string;
-  beneficiary_account_type: string;
   beneficiary_state: string;
+  destination_country: string;
   beneficiary_postcode: string;
-  beneficiary_account_number: string;
   destination_currency: string;
   payout_method: string;
   routing_code_type1?: string;
   routing_code_value1?: string;
+  routing_code_type2?: string;
+  routing_code_value2?: string;
   created_at: string;
   updated_at: string;
 }

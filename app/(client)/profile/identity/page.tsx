@@ -86,9 +86,7 @@ export default function KycIdentityPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(kycIdentitySchema.omit({ token: true, customer_id: true })),
     defaultValues: {
-      id_type: '',
       id_number: '',
-      front_image: '',
       back_image: '',
     },
   });

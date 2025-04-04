@@ -6,13 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useSession } from '@/context/session-context';
 import { getAllTransactions } from '@/lib/api-calls';
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { 
   ArrowRight, 
   ShieldCheck, 
@@ -124,11 +117,18 @@ export default function Dashboard() {
   };
 
   return (
-    <main className="min-h-screen p-6 bg-white dark:bg-black">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <main className=" bg-white dark:bg-black relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute top-[50%] right-[20%] w-[30%] h-[30%] bg-gray-200 dark:bg-gray-800 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[10%] left-[30%] w-[40%] h-[30%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-5xl mx-auto p-6 space-y-8 relative z-10">
     
         <div className="text-center space-y-4 mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black dark:text-white">
             International Payments Made Easy
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
@@ -137,21 +137,20 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-black text-white dark:bg-white dark:text-black hover:shadow-xl transition-all duration-200 group border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-2xl">
+          <div className="bg-black text-white dark:bg-white dark:text-black rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-200">
+            <div className="p-6">
+              <div className="flex items-center gap-2 text-2xl font-bold mb-2">
                 <Send className="h-6 w-6" />
                 Send Money
-              </CardTitle>
-              <CardDescription className="text-gray-300 dark:text-gray-700 text-base">
+              </div>
+              <p className="text-gray-300 dark:text-gray-700 text-base mb-6">
                 Make an international transfer in minutes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </p>
+            
               <Button 
                 asChild 
                 variant="secondary" 
-                className="w-full mt-4 bg-white hover:bg-gray-100 text-black dark:bg-black dark:text-white dark:hover:bg-gray-900 border-0 group-hover:translate-y-[-2px] transition-transform duration-200"
+                className="w-full py-5 mt-4 bg-white hover:bg-gray-100 text-black dark:bg-black dark:text-white dark:hover:bg-gray-900 border-0 transition-transform duration-200 rounded-xl"
               >
                 <Link href="/payment">
                   <span className="flex items-center justify-center text-base">
@@ -160,24 +159,23 @@ export default function Dashboard() {
                   </span>
                 </Link>
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all duration-200 bg-white dark:bg-black">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-2xl">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-200 border border-gray-200 dark:border-gray-800">
+            <div className="p-6">
+              <div className="flex items-center gap-2 text-2xl font-bold mb-2 text-black dark:text-white">
                 <Users className="h-6 w-6" />
                 Add Beneficiary
-              </CardTitle>
-              <CardDescription className="text-base">
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 text-base mb-6">
                 Save recipient details for faster transfers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </p>
+            
               <Button 
                 asChild 
                 variant="outline" 
-                className="w-full mt-4 hover:bg-gray-50 dark:hover:bg-gray-900 border-gray-200 dark:border-gray-800 hover:translate-y-[-2px] transition-transform duration-200"
+                className="w-full py-5 mt-4 hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700 transition-transform duration-200 rounded-xl"
               >
                 <Link href="/beneficiaries/new">
                   <span className="flex items-center justify-center text-base">
@@ -186,25 +184,25 @@ export default function Dashboard() {
                   </span>
                 </Link>
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
-        <Card className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-black">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
+          <div className="p-6 pb-4 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">Recent Transactions</CardTitle>
-              <CardDescription className="text-base">
+              <h2 className="text-2xl font-bold text-black dark:text-white">Recent Transactions</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-base">
                 Your latest payment activities
-              </CardDescription>
+              </p>
             </div>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="rounded-xl">
               <Link href="/transactions">
                 View All
               </Link>
             </Button>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6 pt-0">
             {isLoadingTransactions ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
@@ -254,7 +252,7 @@ export default function Dashboard() {
                           variant="ghost" 
                           size="sm"
                           onClick={() => handleTransactionClick(transaction)}
-                          className="hover:bg-gray-100 dark:hover:bg-gray-900"
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                         >
                           View
                         </Button>
@@ -266,56 +264,56 @@ export default function Dashboard() {
             ) : (
               <div className="py-8 text-center">
                 <p className="text-gray-600 dark:text-gray-400 mb-4">No transactions found</p>
-                <Button asChild className="bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100">
+                <Button asChild className="bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 rounded-xl">
                   <Link href="/payment">
                     Send your first payment
                   </Link>
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="mt-12 border border-gray-200 dark:border-gray-800 bg-white dark:bg-black">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Why Choose Us?</CardTitle>
-            <CardDescription className="text-base">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
+          <div className="p-6 pb-2 text-center">
+            <h2 className="text-2xl font-bold text-black dark:text-white mb-2">Why Choose Us?</h2>
+            <p className="text-base text-gray-600 dark:text-gray-400">
               Experience seamless international transfers with our platform
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div className="p-6">
             <div className="grid md:grid-cols-3 gap-8 mt-4">
               <div className="flex flex-col items-center text-center space-y-3 p-4">
-                <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-                  <Globe className="h-6 w-6 text-gray-900 dark:text-gray-100" />
+                <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <Globe className="h-6 w-6 text-black dark:text-white" />
                 </div>
-                <h3 className="font-semibold text-lg">Global Coverage</h3>
+                <h3 className="font-semibold text-lg text-black dark:text-white">Global Coverage</h3>
                 <p className="text-gray-600 dark:text-gray-400">Send money to over 100+ countries worldwide</p>
               </div>
 
               <div className="flex flex-col items-center text-center space-y-3 p-4">
-                <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-gray-900 dark:text-gray-100" />
+                <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-black dark:text-white" />
                 </div>
-                <h3 className="font-semibold text-lg">Fast Transfers</h3>
+                <h3 className="font-semibold text-lg text-black dark:text-white">Fast Transfers</h3>
                 <p className="text-gray-600 dark:text-gray-400">Most transfers complete within 24 hours</p>
               </div>
 
               <div className="flex flex-col items-center text-center space-y-3 p-4">
-                <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-                  <ShieldCheck className="h-6 w-6 text-gray-900 dark:text-gray-100" />
+                <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <ShieldCheck className="h-6 w-6 text-black dark:text-white" />
                 </div>
-                <h3 className="font-semibold text-lg">Secure & Reliable</h3>
+                <h3 className="font-semibold text-lg text-black dark:text-white">Secure & Reliable</h3>
                 <p className="text-gray-600 dark:text-gray-400">Bank-grade security for your peace of mind</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[800px]">
+          <DialogContent className="sm:max-w-[800px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 rounded-3xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
+              <DialogTitle className="flex items-center justify-between text-black dark:text-white">
                 <div className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
                   <span>Transaction Details</span>
@@ -324,12 +322,12 @@ export default function Dashboard() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsModalOpen(false)}
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
                 Complete information about your transaction
               </DialogDescription>
             </DialogHeader>
@@ -346,7 +344,7 @@ export default function Dashboard() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-lg border-gray-200 dark:border-gray-700"
                       onClick={() => window.open(selectedTransaction.invoice, '_blank')}
                     >
                       <Download className="h-4 w-4" />
@@ -355,59 +353,59 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <Separator />
+                <Separator className="bg-gray-200 dark:bg-gray-800" />
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Transaction ID</p>
-                      <p className="text-sm font-mono">{selectedTransaction._id}</p>
+                      <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction._id}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tracking ID</p>
-                      <p className="text-sm font-mono">{selectedTransaction.tracking_id}</p>
+                      <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction.tracking_id}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Organization ID</p>
-                      <p className="text-sm font-mono">{selectedTransaction.organization_id}</p>
+                      <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction.organization_id}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">User ID</p>
-                      <p className="text-sm font-mono">{selectedTransaction.user_id}</p>
+                      <p className="text-sm font-mono text-black dark:text-white">{selectedTransaction.user_id}</p>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Type</p>
-                      <p className="text-sm capitalize">{selectedTransaction.type}</p>
+                      <p className="text-sm capitalize text-black dark:text-white">{selectedTransaction.type}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Currency</p>
-                      <p className="text-sm">{selectedTransaction.currency}</p>
+                      <p className="text-sm text-black dark:text-white">{selectedTransaction.currency}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Amount</p>
-                      <p className="text-sm font-semibold">
+                      <p className="text-sm font-semibold text-black dark:text-white">
                         {selectedTransaction.invoice ? `$${parseFloat(selectedTransaction.invoice).toFixed(2)}` : 'N/A'}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Exchange Rate</p>
-                      <p className="text-sm">{selectedTransaction.offer_rate}</p>
+                      <p className="text-sm text-black dark:text-white">{selectedTransaction.offer_rate}</p>
                     </div>
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="bg-gray-200 dark:bg-gray-800" />
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</p>
-                    <p className="text-sm">{formatDate(selectedTransaction.created_at)}</p>
+                    <p className="text-sm text-black dark:text-white">{formatDate(selectedTransaction.created_at)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</p>
-                    <p className="text-sm">{formatDate(selectedTransaction.updated_at)}</p>
+                    <p className="text-sm text-black dark:text-white">{formatDate(selectedTransaction.updated_at)}</p>
                   </div>
                 </div>
               </div>

@@ -2,13 +2,6 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Loader2 } from 'lucide-react';
@@ -78,10 +71,17 @@ export default function BeneficiaryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black p-4">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto  space-y-8 relative z-10">
+      {/* Background pattern */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute top-[50%] right-[20%] w-[30%] h-[30%] bg-gray-200 dark:bg-gray-800 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[10%] left-[30%] w-[40%] h-[30%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-4xl mx-auto p-4 space-y-8 relative z-10">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold tracking-tight text-black dark:text-white">
             Select Beneficiary
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
@@ -89,55 +89,51 @@ export default function BeneficiaryPage() {
           </p>
         </div>
         
-     
-
-        <Card className="border-gray-200 dark:border-gray-800">
-          <CardHeader>
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
+          <div className="p-6 pb-4">
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle>Your Beneficiaries</CardTitle>
-                <CardDescription>
+                <h2 className="text-2xl font-bold text-black dark:text-white">Your Beneficiaries</h2>
+                <p className="text-gray-600 dark:text-gray-400">
                   Select a beneficiary to continue with your transfer
-                </CardDescription>
+                </p>
               </div>
               <Button
                 onClick={handleAddNewBeneficiary}
-                className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
+                className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add New
               </Button>
             </div>
-          </CardHeader>
+          </div>
           
-          <CardContent>
+          <div className="p-6 pt-0">
             {beneficiariesData?.data && beneficiariesData.data.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {beneficiariesData.data.map((beneficiary, index) => (
-                  <Card
+                  <div
                     key={beneficiary._id + index}
-                    className="border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white cursor-pointer transition-colors"
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-gray-900 dark:hover:border-white rounded-xl shadow-sm hover:shadow-md cursor-pointer transition-all p-6"
                     onClick={() => handleSelectBeneficiary(beneficiary)}
                   >
-                    <CardContent className="p-6">
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {beneficiary.beneficiary_name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {beneficiary.beneficiary_account_number}
-                        </p>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500 dark:text-gray-400">
-                            {beneficiary.destination_country}
-                          </span>
-                          <span className="text-gray-900 dark:text-white font-medium">
-                            {beneficiary.destination_currency}
-                          </span>
-                        </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold text-black dark:text-white">
+                        {beneficiary.beneficiary_name}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {beneficiary.beneficiary_account_number}
+                      </p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {beneficiary.destination_country}
+                        </span>
+                        <span className="text-black dark:text-white font-medium">
+                          {beneficiary.destination_currency}
+                        </span>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -147,27 +143,27 @@ export default function BeneficiaryPage() {
                 </p>
                 <Button
                   onClick={handleAddNewBeneficiary}
-                  className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
+                  className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Your First Beneficiary
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-l-4 border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-900">
-          <CardHeader>
-            <CardTitle className="text-lg">About Beneficiaries</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border-l-4 border-t border-r border-b border-gray-200 dark:border-gray-800 border-l-gray-900 dark:border-l-white">
+          <div className="p-6 pb-4">
+            <h2 className="text-lg font-bold text-black dark:text-white">About Beneficiaries</h2>
+          </div>
+          <div className="p-6 pt-0">
             <p className="text-gray-600 dark:text-gray-400">
               Save your beneficiaries to make future transfers faster and easier. 
               You can add multiple beneficiaries for different countries and currencies.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

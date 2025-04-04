@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/context/session-context';
 import { toast } from 'sonner';
+import { ICustomer } from '@/lib/models';
 
 import {
   Card,
@@ -29,16 +30,30 @@ import {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, user, customer, logout } = useSession();
+  const {  user, logout } = useSession();
+  const [customer, setCustomer] = useState<ICustomer | null>(null);
   
-  // Redirect if not authenticated
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
-  }
+  // Use kyc_tier instead of tier
+  const tierLevel = user?.kyc_tier === "2" ? 2 : 1;
 
-  const tierLevel = customer?.tier || 1;
-
+    
+  useEffect(() => {
+    if (user) {
+      setCustomer({
+        id: user._id,
+        email: user.email,
+        status: user.status || 'active',
+        kyc_tier: user.kyc_tier || '1',
+        phone_number: user.phone_number || '',
+        first_name: user.first_name || user.full_name.split(' ')[0] || '',
+        last_name: user.last_name || user.full_name.split(' ')[1] || '',
+        customer_type: user.customer_type || 'individual',
+        address: user.address?.street || '',
+        dob: user.date_of_birth || '',
+      });
+    }
+  }, [user]);
+  
   // Handle logout
   const handleLogout = () => {
     logout();
@@ -46,11 +61,20 @@ export default function ProfilePage() {
     router.push('/auth/login');
   };
 
+
+
   return (
-    <div className="min-h-screen bg-white dark:bg-black p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+    <div className="max-w-5xl mx-auto  space-y-8 relative z-10 ">
+
+       {/* Background pattern */}
+       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute top-[50%] right-[20%] w-[30%] h-[30%] bg-gray-200 dark:bg-gray-800 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[10%] left-[30%] w-[40%] h-[30%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+      </div>
+      <div className="max-w-4xl mx-auto space-y-8 ">
+        <div className='text-center'>
+          <h1 className="text-3xl font-bold ">
             My Profile
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -79,7 +103,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Full Name</p>
-                  <p>{customer?.name || user?.name || 'Not provided'}</p>
+                  <p>{customer?.first_name} {customer?.last_name || user?.full_name || 'Not provided'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
@@ -87,7 +111,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone Number</p>
-                  <p>{customer?.phone || user?.phone || 'Not provided'}</p>
+                  <p>{customer?.phone_number || user?.phone_number || 'Not provided'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Account Status</p>
@@ -100,12 +124,6 @@ export default function ProfilePage() {
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Date of Birth</p>
                     <p>{customer.dob}</p>
-                  </div>
-                )}
-                {customer?.gender && (
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Gender</p>
-                    <p>{customer.gender.charAt(0).toUpperCase() + customer.gender.slice(1)}</p>
                   </div>
                 )}
               </div>
@@ -235,12 +253,12 @@ export default function ProfilePage() {
                 <div className="border rounded-md p-4 bg-white dark:bg-gray-900">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-medium">Identity Verification</h3>
-                    <div className={`h-2 w-2 rounded-full ${customer?.kyc_verified ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                    <div className={`h-2 w-2 rounded-full ${tierLevel > 1 ? 'bg-green-500' : 'bg-amber-500'}`}></div>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    {customer?.kyc_verified ? 'Verified' : 'Not Verified'}
+                    {tierLevel > 1 ? 'Verified' : 'Not Verified'}
                   </p>
-                  {!customer?.kyc_verified && (
+                  {tierLevel === 1 && (
                     <Button
                       variant="outline"
                       size="sm"

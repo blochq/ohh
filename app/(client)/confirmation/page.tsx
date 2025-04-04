@@ -2,13 +2,6 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -116,10 +109,17 @@ export default function ConfirmationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black p-4">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-white dark:bg-black relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute top-[50%] right-[20%] w-[30%] h-[30%] bg-gray-200 dark:bg-gray-800 opacity-30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[10%] left-[30%] w-[40%] h-[30%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-4xl mx-auto p-4 space-y-8 relative z-10">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-black dark:from-white dark:to-gray-100 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold tracking-tight text-black dark:text-white">
             Confirm Transfer
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
@@ -133,26 +133,26 @@ export default function ConfirmationPage() {
           </Alert>
         )}
 
-        <Card className="border-gray-200 dark:border-gray-800">
-          <CardHeader>
-            <CardTitle>Transfer Details</CardTitle>
-            <CardDescription>
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
+          <div className="p-6 pb-4">
+            <h2 className="text-2xl font-bold text-black dark:text-white">Transfer Details</h2>
+            <p className="text-gray-600 dark:text-gray-400">
               Please review and confirm your transfer information
-            </CardDescription>
-          </CardHeader>
+            </p>
+          </div>
 
-          <CardContent>
+          <div className="p-6 pt-0">
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Beneficiary</h3>
-                  <p className="mt-1 text-lg font-medium">{selectedBeneficiary.beneficiary_name}</p>
+                  <p className="mt-1 text-lg font-medium text-black dark:text-white">{selectedBeneficiary.beneficiary_name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{selectedBeneficiary.beneficiary_account_number}</p>
                 </div>
 
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Amount</h3>
-                  <p className="mt-1 text-lg font-medium">
+                  <p className="mt-1 text-lg font-medium text-black dark:text-white">
                     {conversionData?.destinationAmount.toLocaleString()} {selectedBeneficiary.destination_currency}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -162,7 +162,7 @@ export default function ConfirmationPage() {
 
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Destination</h3>
-                  <p className="mt-1 text-lg font-medium">{selectedBeneficiary.destination_country}</p>
+                  <p className="mt-1 text-lg font-medium text-black dark:text-white">{selectedBeneficiary.destination_country}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {selectedBeneficiary.beneficiary_city}, {selectedBeneficiary.beneficiary_state}
                   </p>
@@ -170,7 +170,7 @@ export default function ConfirmationPage() {
 
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Delivery Time</h3>
-                  <p className="mt-1 text-lg font-medium">1-2 Business Days</p>
+                  <p className="mt-1 text-lg font-medium text-black dark:text-white">1-2 Business Days</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Estimated delivery time</p>
                 </div>
               </div>
@@ -183,10 +183,10 @@ export default function ConfirmationPage() {
                       name="source_of_funds"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Source of Funds</FormLabel>
+                          <FormLabel className="text-black dark:text-white">Source of Funds</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
                                 <SelectValue placeholder="Select source of funds" />
                               </SelectTrigger>
                             </FormControl>
@@ -208,10 +208,10 @@ export default function ConfirmationPage() {
                       name="purpose_code"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Purpose of Transfer</FormLabel>
+                          <FormLabel className="text-black dark:text-white">Purpose of Transfer</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
                                 <SelectValue placeholder="Select purpose" />
                               </SelectTrigger>
                             </FormControl>
@@ -234,13 +234,13 @@ export default function ConfirmationPage() {
                       type="button"
                       variant="outline"
                       onClick={() => router.back()}
-                      className="border-gray-200 dark:border-gray-800"
+                      className="border-gray-200 dark:border-gray-800 rounded-xl"
                     >
                       Back
                     </Button>
                     <Button
                       type="submit"
-                      className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
+                      className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl"
                       disabled={transferMutation.isPending}
                     >
                       {transferMutation.isPending ? (
@@ -256,20 +256,20 @@ export default function ConfirmationPage() {
                 </form>
               </Form>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-l-4 border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-900">
-          <CardHeader>
-            <CardTitle className="text-lg">Important Information</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border-l-4 border-t border-r border-b border-gray-200 dark:border-gray-800 border-l-gray-900 dark:border-l-white">
+          <div className="p-6 pb-4">
+            <h2 className="text-lg font-bold text-black dark:text-white">Important Information</h2>
+          </div>
+          <div className="p-6 pt-0">
             <p className="text-gray-600 dark:text-gray-400">
               Please ensure all information is correct before confirming your transfer. 
               Once confirmed, the transfer cannot be cancelled.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
