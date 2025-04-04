@@ -49,7 +49,7 @@ export default function PaymentPage() {
   const [supportedCountries, setSupportedCountries] = useState<ISupportedCountry[]>([]);
   const [supportedCurrencies, setSupportedCurrencies] = useState<ISupportedCurrency[]>([]);
   
-  const resultsRef = React.useRef<HTMLDivElement>(null);
+
   
   const {
     exchangeRateData,

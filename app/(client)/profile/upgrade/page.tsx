@@ -44,15 +44,10 @@ type FormValues = z.infer<typeof customerUpgradeSchema>;
 
 export default function ProfileUpgradePage() {
   const router = useRouter();
-  const { isAuthenticated, user, customer, refreshSession } = useSession();
+  const { user, customer, refreshSession } = useSession();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   
-  // Redirect if not authenticated
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
-  }
-
+ 
   const userId = customer?.id || user?._id || '';
   
   // Initialize form with default values

@@ -396,6 +396,7 @@ export const transferPayoutSchema = z.object({
   purpose_code: z.string(),
   source_of_funds: z.string(),
   beneficiary_id: z.string(),
+  invoice:z.string(),
   environment: z.string(),
   token: z.string(),
 });
