@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -40,16 +40,13 @@ const FALLBACK_COUNTRIES = [
 export default function PaymentPage() {
   const router = useRouter();
   const [amount, setAmount] = useState<string>('');
-  const [destinationCountry, setDestinationCountry] = useState<string>('');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [showSessionWarning, setShowSessionWarning] = useState<boolean>(false);
   const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(SESSION_TIMEOUT);
   const [transferFee, setTransferFee] = useState<{fee: number, vat: number} | null>(null);
   const [supportedCountries, setSupportedCountries] = useState<ISupportedCountry[]>([]);
   const [supportedCurrencies, setSupportedCurrencies] = useState<ISupportedCurrency[]>([]);
-  
-
+  const resultsRef = useRef<HTMLDivElement>(null);
   
   const {
     exchangeRateData,
@@ -57,8 +54,15 @@ export default function PaymentPage() {
     conversionData,
     setConversionData,
     lastActivityTime,
-    updateActivity
+    updateActivity,
+    destinationCountry,
+    setDestinationCountry,
+    selectedCurrency,
+    setSelectedCurrency
   } = usePaymentContext();
+
+  const currentDestinationCountry = destinationCountry || '';
+  const currentSelectedCurrency = selectedCurrency || '';
 
   const token = getAuthToken();
 
@@ -224,7 +228,7 @@ export default function PaymentPage() {
           const convData: IConversion = {
             sourceCurrency: 'NGN',
             sourceAmount: data.data.amount/100,
-            destinationCurrency: selectedCurrency,
+            destinationCurrency: selectedCurrency as string,
             destinationAmount: parseFloat(amount),
             rate: (data.data.amount/100) / parseFloat(amount),
             fee: (transferFee?.fee || 0) + (transferFee?.vat || 0),
@@ -237,6 +241,10 @@ export default function PaymentPage() {
         }
         
         toast.success("Exchange rate calculated successfully");
+
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       }
     },
     onError: (error: Error) => {
@@ -246,7 +254,7 @@ export default function PaymentPage() {
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAmount(e.target.value);
-    
+    updateActivity();
     if (exchangeRateData) {
       setExchangeRateData(null);
       setTransferFee(null);
@@ -278,7 +286,7 @@ export default function PaymentPage() {
     e.preventDefault();
     updateActivity();
     
-    if (!amount || !destinationCountry || !selectedCurrency) {
+    if (!amount || !currentDestinationCountry || !currentSelectedCurrency) {
       setError('Please enter an amount and select both destination country and currency');
       return;
     }
@@ -297,7 +305,8 @@ export default function PaymentPage() {
     }
     
     exchangeRateMutation.mutate({
-      currency: selectedCurrency,
+      source_currency: 'NGN',
+      destination_currency: currentSelectedCurrency as string,
       amount: parseFloat(amount),
       token
     });
@@ -317,15 +326,7 @@ export default function PaymentPage() {
   };
 
 
-  const calculateTotalFee = (): number => {
-    if (transferFee) {
-      return transferFee.fee + transferFee.vat;
-    } else if (conversionData) {
-      // Fallback to estimate if API fee not available
-      return conversionData.sourceAmount * 0.01;
-    }
-    return 0;
-  };
+
 
   return (
     <div className="min-h-screen bg-white dark:bg-black p-4">
@@ -368,7 +369,7 @@ export default function PaymentPage() {
 
               <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
-                  <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
+                  <Select value={currentSelectedCurrency} onValueChange={handleCurrencyChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
@@ -384,7 +385,7 @@ export default function PaymentPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="destinationCountry">Destination Country</Label>
-                  <Select value={destinationCountry} onValueChange={handleDestinationCountryChange}>
+                  <Select value={currentDestinationCountry} onValueChange={handleDestinationCountryChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select destination country" />
                     </SelectTrigger>
@@ -403,7 +404,7 @@ export default function PaymentPage() {
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 dark:text-gray-400">
-                        {selectedCurrency || '$'}
+                        {currentSelectedCurrency || '$'}
                       </span>
                     </div>
                     <Input
@@ -418,7 +419,7 @@ export default function PaymentPage() {
                     />
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Minimum amount: {selectedCurrency || 'USD'} 100.00
+                    Minimum amount: {currentSelectedCurrency || 'USD'} 100.00
                   </p>
                 </div>
                 
@@ -458,7 +459,7 @@ export default function PaymentPage() {
         </Card>
 
         {exchangeRateData && (
-          <Card className="border-gray-200 dark:border-gray-800">
+          <Card ref={resultsRef} className="border-gray-200 dark:border-gray-800 scroll-mt-4">
             <CardHeader>
               <CardTitle>Exchange Rate Results</CardTitle>
               <CardDescription>Review your payment details before proceeding</CardDescription>
@@ -475,34 +476,24 @@ export default function PaymentPage() {
                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Recipient gets</p>
                   <p className="text-xl font-bold text-black dark:text-white mt-1">
-                    {selectedCurrency} {parseFloat(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    {currentSelectedCurrency} {parseFloat(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </p>
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Exchange rate</p>
                   <p className="text-black dark:text-white mt-1">
-                    1 {selectedCurrency} = ₦ {(conversionData?.rate || 750).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    1 {currentSelectedCurrency} = ₦ {(conversionData?.rate || 750).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </p>
                 </div>
 
-                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Fee</p>
-                  <p className="text-black dark:text-white mt-1">
-                    ₦ {calculateTotalFee().toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </p>
-                  {transferFee && (
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      <p>Transaction fee: ₦ {transferFee.fee.toLocaleString()}</p>
-                      <p>VAT: ₦ {transferFee.vat.toLocaleString()}</p>
-                    </div>
-                  )}
-                </div>
+
               </div>
             </CardContent>
             <CardFooter className="flex justify-center pb-6">
               <Button
                 onClick={handleProceedToPayment}
+                disabled={transferFeeMutation.isPending || sessionTimeLeft === 0}
                 className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100"
               >
                 Proceed with Payment

@@ -1,180 +1,147 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Loader2, Upload, X, FileText } from 'lucide-react';
-import { initiateTransferPayout, getSourceOfFunds, getPurposeCodes } from '@/lib/api-calls';
-import { transferPayoutSchema, getSourceOfFundsSchema, getPurposeCodesSchema } from '@/lib/dto';
+import { Loader2, Info, FileText } from 'lucide-react';
+import { initiateTransferPayout, getSenderDetails } from '@/lib/api-calls';
+import { transferPayoutSchema, getSenderDetailsSchema } from '@/lib/dto';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { usePaymentContext } from '@/context/payment-context';
 import { getAuthToken } from '@/lib/helper-function';
-import { Input } from "@/components/ui/input";
+import { useSession } from '@/context/session-context';
 
-const formSchema = transferPayoutSchema.omit({ token: true });
+// Helper component for displaying details
+const DetailItem = ({ label, value, className }: { label: string, value?: string | number | null, className?: string }) => {
+  if (value === null || value === undefined || value === '') return null;
+  return (
+    <div className={`flex justify-between text-sm ${className}`}>
+      <p className="text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="font-medium text-gray-900 dark:text-gray-100 text-right">{value}</p>
+    </div>
+  );
+};
+
+// Helper to format currency
+const formatCurrency = (amount: number, currency: string) => {
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(amount);
+  } catch (e) {
+    console.warn(`Failed to format currency ${currency}`, e);
+    return `${currency} ${amount.toFixed(2)}`;
+  }
+};
 
 export default function ConfirmationPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
-  const [invoiceBase64, setInvoiceBase64] = useState<string | null>(null);
-  const [isEncoding, setIsEncoding] = useState<boolean>(false);
   const token = getAuthToken();
-  const { selectedBeneficiary, exchangeRateData, conversionData } = usePaymentContext();
+  const { 
+    selectedBeneficiary, 
+    conversionData, 
+    sourceOfFunds, 
+    purposeCode, 
+    narration, 
+    invoiceFile, 
+    invoiceBase64,
+    clearPaymentData,
+    accountData
+    
+  } = usePaymentContext();
+  const { userName } = useSession();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      currency: selectedBeneficiary?.destination_currency || '',
-      amount: conversionData?.destinationAmount || 0,
-      purpose_code: '',
-      source_of_funds: '',
-      beneficiary_id: selectedBeneficiary?._id || '',
-      environment: 'test',
-      invoice: '',
-    },
-  });
-
-  // Function to convert file to base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          // Get only the base64 part (remove the data:application/pdf;base64, prefix)
-          const base64 = reader.result.split(',')[1];
-          resolve(base64);
-        } else {
-          reject(new Error('Failed to convert file to base64'));
+  // Fetch Sender Details for display
+  const { data: senderDetails, isLoading: isLoadingSender, error: senderError } = useQuery({
+    queryKey: ['senderDetails', token],
+    queryFn: async () => {
+        if (!token) throw new Error('Authentication required for sender details');
+        const input: z.infer<typeof getSenderDetailsSchema> = { token };
+        const response = await getSenderDetails(input);
+        if (response.error) {
+            const errorMessage = (response.error as Error).message || 'Failed to fetch sender details'; 
+            throw new Error(errorMessage);
         }
-      };
-      reader.onerror = error => reject(error);
-    });
-  };
+        if (!response.data) {
+            throw new Error('No sender data received');
+        }
+        return response.data;
+    },
+    enabled: !!token, 
+    retry: 1,
+  });
 
-  // Handle invoice file upload
-  const handleInvoiceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size exceeds 5MB limit');
-        return;
-      }
-      
-      if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
-        toast.error('Only PDF, JPEG, and PNG files are supported');
-        return;
-      }
-      
-      setInvoiceFile(file);
-      setIsEncoding(true);
-      
-      try {
-        const base64 = await fileToBase64(file);
-        setInvoiceBase64(base64);
-        form.setValue('invoice', base64);
-        toast.success('Invoice uploaded successfully');
-      } catch (error) {
-        toast.error('Failed to upload invoice');
-        console.error(error);
-      } finally {
-        setIsEncoding(false);
-      }
+
+  useEffect(() => {
+    if (!selectedBeneficiary || !conversionData || !sourceOfFunds || !purposeCode || !invoiceBase64) {
+      toast.error("Missing required transfer details. Please start the process again.");
+      router.push('/payment');
     }
-  };
-
-  // Clear uploaded invoice
-  const clearInvoice = () => {
-    setInvoiceFile(null);
-    setInvoiceBase64(null);
-    form.setValue('invoice', '');
-  };
-
-  const { data: sourceOfFundsData } = useQuery({
-    queryKey: ['sourceOfFunds'],
-    queryFn: async () => {
-      if (!token) throw new Error('Authentication required');
-      const input: z.infer<typeof getSourceOfFundsSchema> = { token };
-      const response = await getSourceOfFunds(input);
-      if (response.error) throw new Error(response.error.message);
-      return response.data;
-    },
-    enabled: !!token,
-  });
-
-  const { data: purposeCodesData } = useQuery({
-    queryKey: ['purposeCodes'],
-    queryFn: async () => {
-      if (!token) throw new Error('Authentication required');
-      const input: z.infer<typeof getPurposeCodesSchema> = { token };
-      const response = await getPurposeCodes(input);
-      if (response.error) throw new Error(response.error.message);
-      return response.data;
-    },
-    enabled: !!token,
-  });
+  }, [selectedBeneficiary, conversionData, sourceOfFunds, purposeCode, invoiceBase64, router]);
 
   const transferMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof formSchema>) => {
+    mutationFn: async () => {
       if (!token) throw new Error('Authentication required');
-      if (!data.invoice) throw new Error('Invoice is required');
+      if (!selectedBeneficiary || !conversionData || !sourceOfFunds || !purposeCode || !invoiceBase64) {
+        throw new Error('Missing required transfer details in context.');
+      }
       
-      const input = { ...data, token };
-      const response = await initiateTransferPayout(input);
-      if (response.error) throw new Error(response.error.message);
+      const input = {
+          currency: selectedBeneficiary.destination_currency || '',
+          amount: conversionData.destinationAmount || 0,
+          purpose_code: purposeCode,
+          source_of_funds: sourceOfFunds,
+          payout_reference: accountData?.reference || '',
+          beneficiary_id: selectedBeneficiary._id || '',
+          environment: process.env.NEXT_PUBLIC_ENVIRONMENT === 'production' ? 'live' : 'test',
+          invoice: invoiceBase64,
+          token: token,
+      };
+
+      const validation = transferPayoutSchema.safeParse(input);
+      if (!validation.success) {
+          console.error("Final payload validation failed:", validation.error.flatten().fieldErrors);
+          const errorFields = Object.keys(validation.error.flatten().fieldErrors).join(', ');
+          throw new Error(`Transfer data validation failed. Please check: ${errorFields}`);
+      }
+
+      const response = await initiateTransferPayout(validation.data);
+      if (response.error) {
+           const apiError = response.error as Error;
+           throw new Error(apiError.message || 'Failed to initiate transfer payout.');
+      }
+      if (!response.data) {
+        throw new Error('No data received from transfer payout API.')
+      }
       return response.data;
     },
-    onSuccess: () => {
-      toast.success('Transfer initiated successfully');
+    onSuccess: (data) => {
+      const reference = data.data.provider_ref
+      toast.success(`Transfer initiated successfully! Reference: ${reference}`);
+      clearPaymentData();
       router.push('/transactions');
     },
     onError: (error: Error) => {
-      setError(error.message);
-      toast.error('Failed to initiate transfer');
+      setError(error.message || 'An unexpected error occurred during transfer.');
+      toast.error(`Transfer Failed: ${error.message}`);
     },
   });
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    if (!invoiceBase64) {
-      toast.error('Please upload an invoice');
-      return;
-    }
-    transferMutation.mutate(data);
+  const handleConfirm = () => {
+    setError(null);
+    transferMutation.mutate();
   };
 
-  if (!selectedBeneficiary) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-black p-4">
-        <div className="max-w-4xl mx-auto">
-          <Alert variant="destructive">
-            <AlertDescription>No beneficiary selected. Please go back and select a beneficiary.</AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
+  const canConfirm = !transferMutation.isPending && 
+                     !!selectedBeneficiary && 
+                     !!conversionData && 
+                     !!sourceOfFunds && 
+                     !!purposeCode && 
+                     !!invoiceBase64 &&
+                     !isLoadingSender &&
+                     !senderError;
 
   return (
     <div className="min-h-screen bg-white dark:bg-black relative overflow-hidden">
@@ -188,228 +155,133 @@ export default function ConfirmationPage() {
       <div className="max-w-4xl mx-auto p-4 space-y-8 relative z-10">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold tracking-tight text-black dark:text-white">
-            Confirm Transfer
+            Confirm Your Transfer
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Review your transfer details before proceeding
+            Please review all transfer details carefully before confirming.
           </p>
         </div>
 
         {error && (
           <Alert variant="destructive">
+            <Info className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
-          <div className="p-6 pb-4">
-            <h2 className="text-2xl font-bold text-black dark:text-white">Transfer Details</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Please review and confirm your transfer information
-            </p>
+          <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-2xl font-bold text-black dark:text-white">Transfer Summary</h2>
           </div>
 
-          <div className="p-6 pt-0">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Beneficiary</h3>
-                  <p className="mt-1 text-lg font-medium text-black dark:text-white">{selectedBeneficiary.beneficiary_name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedBeneficiary.beneficiary_account_number}</p>
+          <div className="p-6 space-y-6">
+            
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Sender Details</h3>
+              {isLoadingSender ? (
+                <div className="flex items-center justify-center py-2">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin text-gray-500 dark:text-gray-400" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading sender details...</p>
                 </div>
-
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Amount</h3>
-                  <p className="mt-1 text-lg font-medium text-black dark:text-white">
-                    {conversionData?.destinationAmount.toLocaleString()} {selectedBeneficiary.destination_currency}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Exchange Rate: {exchangeRateData?.data.amount}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Destination</h3>
-                  <p className="mt-1 text-lg font-medium text-black dark:text-white">{selectedBeneficiary.destination_country}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {selectedBeneficiary.beneficiary_city}, {selectedBeneficiary.beneficiary_state}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Delivery Time</h3>
-                  <p className="mt-1 text-lg font-medium text-black dark:text-white">1-2 Business Days</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Estimated delivery time</p>
-                </div>
-              </div>
-
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="source_of_funds"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-black dark:text-white">Source of Funds</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select source of funds" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {sourceOfFundsData?.data.map((source) => (
-                                <SelectItem key={source} value={source}>
-                                  {source}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="purpose_code"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-black dark:text-white">Purpose of Transfer</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select purpose" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {purposeCodesData?.data && Object.entries(purposeCodesData.data).map(([code, description]) => (
-                                <SelectItem key={code} value={code}>
-                                  {description}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Invoice Upload */}
-                  <FormField
-                    control={form.control}
-                    name="invoice"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">Upload Invoice</FormLabel>
-                        <FormDescription>
-                          Please upload an invoice or supporting document (PDF, JPEG, PNG, max 5MB)
-                        </FormDescription>
-                        <FormControl>
-                          <div className="space-y-4">
-                            {!invoiceFile ? (
-                              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-md p-6 text-center">
-                                <div className="space-y-3">
-                                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    Drag and drop or click to upload
-                                  </p>
-                                  <Input
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    className="hidden"
-                                    id="invoiceUpload"
-                                    {...field}
-                                    onChange={handleInvoiceUpload}
-                                    value=""
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => document.getElementById('invoiceUpload')?.click()}
-                                  >
-                                    {isEncoding ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Processing...
-                                      </>
-                                    ) : (
-                                      'Upload Invoice'
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="bg-gray-50 dark:bg-gray-900 rounded-md p-4 flex items-center justify-between">
-                                <div className="flex items-center">
-                                  <FileText className="h-6 w-6 text-gray-500 mr-3" />
-                                  <div>
-                                    <p className="text-sm font-medium text-black dark:text-white">
-                                      {invoiceFile.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      {(invoiceFile.size / 1024).toFixed(1)} KB
-                                    </p>
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={clearInvoice}
-                                  className="text-gray-500 hover:text-red-500"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex justify-end space-x-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => router.back()}
-                      className="border-gray-200 dark:border-gray-800 rounded-xl"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl"
-                      disabled={transferMutation.isPending || isEncoding || !invoiceBase64}
-                    >
-                      {transferMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        'Confirm Transfer'
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
+              ) : senderError ? (
+                  <Alert variant="destructive" className="text-sm">
+                      <Info className="h-4 w-4"/>
+                      <AlertDescription>Could not load sender details. Error: {(senderError as Error).message}</AlertDescription>
+                  </Alert>
+              ) : senderDetails?.data ? (
+                  <>
+                      <DetailItem label="Name" value={userName || senderDetails.data.Name} />
+                      <DetailItem label="Address" value={senderDetails.data.Address ? `${senderDetails.data.Address}${senderDetails.data.Postcode ? `, ${senderDetails.data.Postcode}` : ''} ${senderDetails.data.CountryCode ? `(${senderDetails.data.CountryCode})` : ''}` : null} />
+                  </>
+              ) : (
+                   <p className="text-sm text-gray-500 dark:text-gray-400">Sender details unavailable.</p>
+              )}
             </div>
+
+            {selectedBeneficiary && (
+              <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Recipient Details</h3>
+                  <DetailItem label="Name" value={selectedBeneficiary.beneficiary_name} />
+                  <DetailItem label="Account Number" value={selectedBeneficiary.beneficiary_account_number} />
+                  <DetailItem label="Country" value={selectedBeneficiary.destination_country} />
+              </div>
+            )}
+
+            {conversionData && (
+                <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Amount Details</h3>
+                    <DetailItem label="Amount Receiving" value={formatCurrency(conversionData.destinationAmount || 0, selectedBeneficiary?.destination_currency || 'USD')} />
+                    {conversionData.sourceCurrency && conversionData.amount && conversionData.sourceCurrency !== selectedBeneficiary?.destination_currency && (
+                        <DetailItem label="Amount Sent" value={formatCurrency(conversionData.amount, conversionData.sourceCurrency)} />
+                    )}
+                    {conversionData.rate && (
+                         <DetailItem label="Exchange Rate" value={`1 ${conversionData.sourceCurrency} = ${conversionData.rate.toFixed(4)} ${selectedBeneficiary?.destination_currency}`} />
+                    )}
+                     {conversionData.fee && (
+                         <DetailItem label="Transfer Fee" value={formatCurrency(conversionData.fee, conversionData.sourceCurrency || 'USD')} />
+                    )}
+                </div>
+            )}
+
+            <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Transfer Information</h3>
+                <DetailItem label="Source of Funds" value={sourceOfFunds} />
+                <DetailItem label="Purpose Code" value={purposeCode} />
+                {narration && <DetailItem label="Narration" value={narration} className="text-wrap" />}
+            </div>
+
+            <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Supporting Document</h3>
+                {invoiceFile ? (
+                   <div className="flex items-center text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                       <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                       <span className="text-gray-700 dark:text-gray-300 truncate" title={invoiceFile.name}>{invoiceFile.name}</span>
+                   </div>
+                ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No invoice uploaded.</p>
+                )}
+             </div>
+
+          </div>
+
+          <div className="p-6 mt-6 border-t border-gray-200 dark:border-gray-800 flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              className="border-gray-200 dark:border-gray-800 rounded-xl"
+              disabled={transferMutation.isPending}
+            >
+              Back
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirm}
+              className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl min-w-[150px]"
+              disabled={!canConfirm}
+            >
+              {transferMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Confirm Transfer'
+              )}
+            </Button>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border-l-4 border-t border-r border-b border-gray-200 dark:border-gray-800 border-l-gray-900 dark:border-l-white">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border-l-4 border-t border-r border-b border-gray-200 dark:border-gray-800 border-l-red-600 dark:border-l-red-500 mt-8">
           <div className="p-6 pb-4">
-            <h2 className="text-lg font-bold text-black dark:text-white">Important Information</h2>
+            <h2 className="text-lg font-bold text-black dark:text-white flex items-center">
+                <Info className="h-5 w-5 mr-2 text-red-600 dark:text-red-500"/> Important Information
+            </h2>
           </div>
           <div className="p-6 pt-0">
             <p className="text-gray-600 dark:text-gray-400">
-              Please ensure all information is correct before confirming your transfer. 
-              Once confirmed, the transfer cannot be cancelled. An invoice or supporting document is required for regulatory compliance.
+              Please ensure all information is correct before confirming. 
+              Transfers are typically processed quickly and <span className="font-semibold">may not be cancellable</span> once confirmed.
             </p>
           </div>
         </div>

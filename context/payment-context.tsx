@@ -30,6 +30,23 @@ interface PaymentContextType {
 
   selectedBeneficiary: IBeneficiary | null;
   setSelectedBeneficiary: (beneficiary: IBeneficiary | null) => void;
+
+  destinationCountry: string | null;
+  setDestinationCountry: (country: string | null) => void;
+
+  selectedCurrency: string | null;
+  setSelectedCurrency: (currency: string | null) => void;
+
+  sourceOfFunds: string | null;
+  setSourceOfFunds: (source: string | null) => void;
+  purposeCode: string | null;
+  setPurposeCode: (code: string | null) => void;
+  invoiceBase64: string | null;
+  setInvoiceBase64: (invoice: string | null) => void;
+  invoiceFile: File | null;
+  setInvoiceFile: (file: File | null) => void;
+  narration: string | null;
+  setNarration: (narration: string | null) => void;
 }
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
@@ -52,6 +69,16 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   
   const [selectedBeneficiary, setSelectedBeneficiary] = useState<IBeneficiary | null>(null);
   
+  const [destinationCountry, setDestinationCountry] = useState<string | null>(null);
+
+  const [selectedCurrency, setSelectedCurrency] = useState<string | null>(null);
+  
+  const [sourceOfFunds, setSourceOfFunds] = useState<string | null>(null);
+  const [purposeCode, setPurposeCode] = useState<string | null>(null);
+  const [invoiceBase64, setInvoiceBase64] = useState<string | null>(null);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [narration, setNarration] = useState<string | null>(null);
+  
   const updateActivity = () => {
     setLastActivityTime(Date.now());
   };
@@ -61,6 +88,11 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     setAccountData(null);
     setExchangeRateData(null);
     setVerificationData(null);
+    setSourceOfFunds(null);
+    setPurposeCode(null);
+    setInvoiceBase64(null);
+    setInvoiceFile(null);
+    setNarration(null);
   };
   
   return (
@@ -79,6 +111,20 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         clearPaymentData,
         selectedBeneficiary,
         setSelectedBeneficiary,
+        destinationCountry,
+        setDestinationCountry,
+        selectedCurrency,
+        setSelectedCurrency,
+        sourceOfFunds,
+        setSourceOfFunds,
+        purposeCode,
+        setPurposeCode,
+        invoiceBase64,
+        setInvoiceBase64,
+        invoiceFile,
+        setInvoiceFile,
+        narration,
+        setNarration,
       }}
     >
       {children}

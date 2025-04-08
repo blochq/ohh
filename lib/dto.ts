@@ -1,3 +1,4 @@
+'use client';
 import { z } from 'zod';
 
 
@@ -30,9 +31,10 @@ export function formatZodErrors(error: z.ZodError): Record<string, string> {
 }
 
 export const exchangeRateSchema = z.object({
-  currency: z.string(),
-  amount: z.number(),
-  token: z.string(),
+  source_currency: z.string().min(3, "Source currency required").max(3),
+  destination_currency: z.string().min(3, "Destination currency required").max(3),
+  amount: z.number().positive("Amount must be positive"),
+  token: z.string().min(1, "Token required"),
 });
 
 export type ExchangeRateFormData = z.infer<typeof exchangeRateSchema>;
@@ -61,23 +63,24 @@ export const tokenSchema = z.object({
 export type TokenFormData = z.infer<typeof tokenSchema>;
 
 export const transferSchema = z.object({
-  account_number: z.string(),
-  bank_code: z.string(),
-  amount: z.number(),
-  token: z.string(),
-  narration: z.string(),
-  account_id: z.string(),
-  reference: z.string(),
+  account_number: z.string().length(10, "Account number must be 10 digits"),
+  bank_code: z.string().min(1, "Bank code is required"),
+  amount: z.number().positive("Amount must be positive"),
+  narration: z.string().optional(),
+  account_id: z.string().min(1, "Account ID required"),
+  reference: z.string().min(1, "Reference required"),
+  token: z.string().min(1, "Token required"),
+  source_of_funds: z.string().min(1, "Source of funds is required"),
+  purpose_code: z.string().min(1, "Purpose of transfer is required"),
+  invoice: z.string().min(1, "Invoice data is required"),
 });
-
-
 
 export type TransferFormData = z.infer<typeof transferSchema>;
 
 export const resolveAccountSchema = z.object({
-  account_number: z.string(),
-  bank_code: z.string(),
-  token: z.string(),
+  bank_code: z.string().min(1, "Bank code required"),
+  account_number: z.string().length(10, "Account number must be 10 digits"),
+  token: z.string().min(1, "Token required"),
 });
 
 export type ResolveAccountFormData = z.infer<typeof resolveAccountSchema>;
@@ -396,6 +399,7 @@ export const transferPayoutSchema = z.object({
   purpose_code: z.string(),
   source_of_funds: z.string(),
   beneficiary_id: z.string(),
+  payout_reference: z.string(),
   invoice:z.string(),
   environment: z.string(),
   token: z.string(),
@@ -404,13 +408,13 @@ export const transferPayoutSchema = z.object({
 export type TransferPayoutFormData = z.infer<typeof transferPayoutSchema>;
 
 export const getSourceOfFundsSchema = z.object({
-  token: z.string(),
+  token: z.string().min(1, "Token required"),
 });
 
 export type GetSourceOfFundsFormData = z.infer<typeof getSourceOfFundsSchema>;
 
 export const getPurposeCodesSchema = z.object({
-  token: z.string(),
+  token: z.string().min(1, "Token required"),
 });
 
 export type GetPurposeCodesFormData = z.infer<typeof getPurposeCodesSchema>;
@@ -427,6 +431,30 @@ export const getSupportedCountriesSchema = z.object({
 });
 
 export type GetSupportedCountriesFormData = z.infer<typeof getSupportedCountriesSchema>;
+
+// Combined Recipient + Transfer Info Schema for Recipient Page Form
+export const RecipientFormData = z.object({
+  narration: z.string().optional(),
+  source_of_funds: z.string().min(1, "Source of funds is required"),
+  purpose_code: z.string().min(1, "Purpose of transfer is required"),
+  invoice: z.string().min(1, "Invoice data is required"),
+});
+
+export type RecipientFormData = z.infer<typeof RecipientFormData>;
+
+export interface ISourceOfFundsResponse {
+  data: string[];
+}
+
+export interface IPurposeCodesResponse {
+  data: { [key: string]: string };
+}
+
+export const getSenderDetailsSchema = z.object({
+  token: z.string().min(1, "Token required"),
+});
+
+export type GetSenderDetailsFormData = z.infer<typeof getSenderDetailsSchema>;
 
 
 

@@ -43,7 +43,7 @@ export default function BeneficiaryPage() {
 
   const handleSelectBeneficiary = (beneficiary: IBeneficiary) => {
     setSelectedBeneficiary(beneficiary);
-    router.push('/confirmation');
+    router.push('/recipient');
   };
 
   const handleAddNewBeneficiary = () => {

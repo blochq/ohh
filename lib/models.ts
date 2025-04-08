@@ -675,4 +675,23 @@ export interface ISupportedCountriesResponse {
   message: string;
 }
 
+export interface ISenderDetails {
+    AccountType: string;
+    Address: string;
+    ContactNumber: string;
+    CountryCode: string;
+    Dob: string; 
+    IdentificationNumber: string;
+    IdentificationType: string;
+    Name: string; 
+    Nationality: string;
+    Postcode: string;
+}
+
+export interface ISenderDetailsResponse {
+    success: boolean;
+    data: ISenderDetails;
+    message: string;
+}
+
 

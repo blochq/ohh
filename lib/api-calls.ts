@@ -1,20 +1,43 @@
-import { collectionAccountSchema, createAccountSchema, createUserSchema, customerUpgradeSchema, exchangeRateSchema, getAllTransactionsSchema, getSingleCustomerSchema, getSingleTransactionSchema, getSingleUserSchema, getTransferFeeSchema, kycIdentitySchema, loginSchema, resolveAccountSchema, signupSchema, tokenSchema, transferSchema, upgradeTierSchema, verifyPaymentSchema, createBeneficiarySchema, getBeneficiaryByIdSchema, transferPayoutSchema, getSourceOfFundsSchema, getPurposeCodesSchema, getSupportedCurrenciesSchema, getSupportedCountriesSchema } from "./dto";
-import { IAccountResponse, IApiError, IApiResponse, IBankListResponse, ICollectionAccountResponse, ICreateUserResponse, ICustomerUpgradeResponse, IExchangeRateResponse, IKycIdentityResponse, ILoginResponse, IResolveAccountResponse, ITransferFeeResponse, ITransferResponse, ITransactionResponse, IUpgradeTierResponse, IValidationError, IVerifyPaymentResponse, IBeneficiaryResponse, IBeneficiariesResponse, ITransferPayoutResponse, ISourceOfFundsResponse, IPurposeCodesResponse, ISupportedCurrenciesResponse, ISupportedCountriesResponse } from "@/lib/models";
+import { collectionAccountSchema, createAccountSchema, createUserSchema, customerUpgradeSchema, exchangeRateSchema, getAllTransactionsSchema, getSingleCustomerSchema, getSingleTransactionSchema, getSingleUserSchema, getTransferFeeSchema, kycIdentitySchema, loginSchema, resolveAccountSchema, signupSchema, tokenSchema, transferSchema, upgradeTierSchema, verifyPaymentSchema, createBeneficiarySchema, getBeneficiaryByIdSchema, transferPayoutSchema, getSourceOfFundsSchema, getPurposeCodesSchema, getSupportedCurrenciesSchema, getSupportedCountriesSchema, getSenderDetailsSchema } from "./dto";
+import { IAccountResponse, IApiError, IApiResponse, IBankListResponse, ICollectionAccountResponse, ICreateUserResponse, ICustomerUpgradeResponse, IExchangeRateResponse, IKycIdentityResponse, ILoginResponse, IResolveAccountResponse, ITransferFeeResponse, ITransferResponse, ITransactionResponse, IUpgradeTierResponse, IValidationError, IVerifyPaymentResponse, IBeneficiaryResponse, IBeneficiariesResponse, ITransferPayoutResponse, ISourceOfFundsResponse, IPurposeCodesResponse, ISupportedCurrenciesResponse, ISupportedCountriesResponse, ISenderDetailsResponse } from "@/lib/models";
 import { z } from "zod";
 
 
 async function handleValidationResponse (response: Response) {
-    const issues = await response.json() as IValidationError[];
-    const data = await response.json() as { error: { code: string; message: string; path: string[] }[] };
-    const validationErrors = data.error;
-  
-    validationErrors.forEach(error => {
-      issues.push({
-        rule: error.code,
-        message: error.message,
-        field: error.path[0],
+    // Read the response body ONCE
+    const responseData = await response.json(); 
+    
+    // Assuming the structure for validation errors is within responseData directly or under an 'error' key
+    // Adjust the following based on the actual structure of your 4xx error responses
+    let validationErrors: { code: string; message: string; path: string[] }[] = [];
+    let issues: IValidationError[] = [];
+
+    if (responseData && Array.isArray(responseData.error)) {
+        // Handle structure like { error: [...] }
+        validationErrors = responseData.error;
+    } else if (Array.isArray(responseData)) {
+        // Handle structure like [...] (assuming it's directly the IValidationError array)
+        // This part might need refinement based on your actual API response for validation errors
+        issues = responseData as IValidationError[]; 
+        // If issues are directly in responseData, maybe you don't need the loop below?
+        // Or perhaps you need to extract code/message/path differently here.
+    }
+
+    // Process the validation errors if they were found in the expected structure
+    if (validationErrors.length > 0) {
+      validationErrors.forEach(error => {
+        issues.push({
+          rule: error.code,
+          message: error.message,
+          field: error.path[0],
+        });
       });
-    });
+    } else if (issues.length === 0) {
+        // If neither structure matched and we have no issues, log a warning or handle as appropriate
+        console.warn("Could not parse validation errors from response:", responseData);
+        // You might want to return a generic error message here
+        return [{ rule: 'parsing_error', message: 'Could not parse validation errors', field: 'unknown' }];
+    }
   
     return issues;
   }
@@ -65,7 +88,7 @@ async function handleValidationResponse (response: Response) {
   };
 
   export const getExchangeRate = async (input: z.infer<typeof exchangeRateSchema>): Promise<IApiResponse<IExchangeRateResponse>> => {
-    return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/otc/new-convert-amount/${input.currency}/${input.amount}`, {
+    return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/otc/new-convert-amount/${input.source_currency}/${input.amount}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -319,6 +342,16 @@ export const getSupportedCurrencies = async (input: z.infer<typeof getSupportedC
 
 export const getSupportedCountries = async (input: z.infer<typeof getSupportedCountriesSchema>): Promise<IApiResponse<ISupportedCountriesResponse>> => {
   return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/all-currencies", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
+
+export const getSenderDetails = async (input: z.infer<typeof getSenderDetailsSchema>): Promise<IApiResponse<ISenderDetailsResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/v1/transfers/sender", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
