@@ -634,6 +634,7 @@ export interface ITransferPayoutResponse {
     beneficiary_account: string;
     beneficiary_name: string;
     provider_ref: string;
+    transaction_id: string;
   };
   message: string;
 }

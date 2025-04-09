@@ -39,8 +39,8 @@ export default function VerifyPaymentPage() {
       router.push('/payment');
       return;
     }
-    updateActivity();
-  }, [router, accountData, conversionData, updateActivity]);
+    
+  }, [router, accountData, conversionData]);
 
 
   useQuery({

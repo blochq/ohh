@@ -126,7 +126,7 @@ export type GetTransferFeeFormData = z.infer<typeof getTransferFeeSchema>;
 
 export const getSingleTransactionSchema = z.object({
   token: z.string(),
-  reference: z.string(),
+  transaction_id: z.string(),
 });
 
 export type GetSingleTransactionFormData = z.infer<typeof getSingleTransactionSchema>;
@@ -209,6 +209,15 @@ export const getBeneficiaryByIdSchema = z.object({
 
 export type GetBeneficiaryByIdFormData = z.infer<typeof getBeneficiaryByIdSchema>;
 
+// Define nested intermediary bank address schema for reuse
+const intermediaryBankAddressSchema = z.object({
+    street: z.string().optional(),
+    house_number: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    country: z.string().optional(),
+});
+
 export const transferPayoutSchema = z.object({
   currency: z.string(),
   amount: z.number(),
@@ -219,6 +228,14 @@ export const transferPayoutSchema = z.object({
   invoice:z.string(),
   environment: z.string(),
   token: z.string(),
+  narration: z.string().optional(),
+  intermediary_details: z.object({
+      intermediary_bank_name: z.string().optional(),
+      intermediary_account_number: z.string().optional(),
+      intermediary_account_swift_code: z.string().optional(),
+      intermediary_address: z.string().optional(),
+      intermediary_bank_address: intermediaryBankAddressSchema.optional()
+  }).optional(),
 });
 
 export type TransferPayoutFormData = z.infer<typeof transferPayoutSchema>;

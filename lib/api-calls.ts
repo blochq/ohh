@@ -219,7 +219,7 @@ export const getAllTransactions = async (input: z.infer<typeof getAllTransaction
 };
 
 export const getSingleTransaction = async (input: z.infer<typeof getSingleTransactionSchema>): Promise<IApiResponse<ITransactionResponse>> => {
-  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/transactions/reference/${input.reference}`, {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + `/v1/transactions/retrieve/payouts/${input.transaction_id}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

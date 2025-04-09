@@ -47,9 +47,8 @@ export default function ConfirmationPage() {
     narration, 
     invoiceFile, 
     invoiceBase64,
-    clearPaymentData,
+    intermediaryDetails,
     accountData
-    
   } = usePaymentContext();
   const { userName } = useSession();
 
@@ -67,9 +66,9 @@ export default function ConfirmationPage() {
         if (!response.data) {
             throw new Error('No sender data received');
         }
-        return response.data;
+      return response.data;
     },
-    enabled: !!token, 
+    enabled: !!token,
     retry: 1,
   });
 
@@ -77,7 +76,7 @@ export default function ConfirmationPage() {
   useEffect(() => {
     if (!selectedBeneficiary || !conversionData || !sourceOfFunds || !purposeCode || !invoiceBase64) {
       toast.error("Missing required transfer details. Please start the process again.");
-      router.push('/dashboard');
+      
     }
   }, [selectedBeneficiary, conversionData, sourceOfFunds, purposeCode, invoiceBase64, router]);
 
@@ -88,7 +87,7 @@ export default function ConfirmationPage() {
         throw new Error('Missing required transfer details in context.');
       }
       
-      const input = {
+      const input: z.infer<typeof transferPayoutSchema> = {
           currency: selectedBeneficiary.destination_currency || '',
           amount: conversionData.destinationAmount || 0,
           purpose_code: purposeCode,
@@ -98,6 +97,8 @@ export default function ConfirmationPage() {
           environment: process.env.NEXT_PUBLIC_ENVIRONMENT === 'production' ? 'live' : 'test',
           invoice: invoiceBase64,
           token: token,
+          narration: narration || undefined, 
+
       };
 
       const validation = transferPayoutSchema.safeParse(input);
@@ -118,10 +119,9 @@ export default function ConfirmationPage() {
       return response.data;
     },
     onSuccess: (data) => {
+      router.push(`/transactions?transaction_id=${data.data.transaction_id}`);
       const reference = data.data.provider_ref
       toast.success(`Transfer initiated successfully! Reference: ${reference}`);
-      clearPaymentData();
-      router.push(`/dashboard`);
     },
     onError: (error: Error) => {
       setError(error.message || 'An unexpected error occurred during transfer.');
@@ -196,7 +196,7 @@ export default function ConfirmationPage() {
               ) : (
                    <p className="text-sm text-gray-500 dark:text-gray-400">Sender details unavailable.</p>
               )}
-            </div>
+                </div>
 
             {selectedBeneficiary && (
               <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -220,7 +220,7 @@ export default function ConfirmationPage() {
                      {conversionData.fee && (
                          <DetailItem label="Transfer Fee" value={formatCurrency(conversionData.fee, conversionData.sourceCurrency || 'USD')} />
                     )}
-                </div>
+                  </div>
             )}
 
             <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -228,7 +228,7 @@ export default function ConfirmationPage() {
                 <DetailItem label="Source of Funds" value={sourceOfFunds} />
                 <DetailItem label="Purpose Code" value={purposeCode} />
                 {narration && <DetailItem label="Narration" value={narration} className="text-wrap" />}
-            </div>
+                                </div>
 
             <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                 <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Supporting Document</h3>
@@ -236,39 +236,58 @@ export default function ConfirmationPage() {
                    <div className="flex items-center text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
                        <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                        <span className="text-gray-700 dark:text-gray-300 truncate" title={invoiceFile.name}>{invoiceFile.name}</span>
-                   </div>
-                ) : (
+                              </div>
+                            ) : (
                     <p className="text-sm text-gray-500 dark:text-gray-400">No invoice uploaded.</p>
                 )}
-             </div>
+                                  </div>
 
-          </div>
+            {intermediaryDetails && (
+              <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Intermediary Bank Details</h3>
+                  <DetailItem label="Bank Name" value={intermediaryDetails.intermediary_bank_name} />
+                  <DetailItem label="Account Number" value={intermediaryDetails.intermediary_account_number} />
+                  <DetailItem label="SWIFT/BIC" value={intermediaryDetails.intermediary_account_swift_code} />
+                  <DetailItem label="Address" value={intermediaryDetails.intermediary_address} />
+                  {intermediaryDetails.intermediary_bank_address && (
+                      <>
+                          <DetailItem label="Bank Street" value={intermediaryDetails.intermediary_bank_address.street} className="pl-4"/>
+                          <DetailItem label="Bank House No" value={intermediaryDetails.intermediary_bank_address.house_number} className="pl-4"/>
+                          <DetailItem label="Bank City" value={intermediaryDetails.intermediary_bank_address.city} className="pl-4"/>
+                          <DetailItem label="Bank State" value={intermediaryDetails.intermediary_bank_address.state} className="pl-4"/>
+                          <DetailItem label="Bank Country" value={intermediaryDetails.intermediary_bank_address.country} className="pl-4"/>
+                      </>
+                  )}    
+                              </div>
+                            )}
+
+                          </div>
 
           <div className="p-6 mt-6 border-t border-gray-200 dark:border-gray-800 flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              className="border-gray-200 dark:border-gray-800 rounded-xl"
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.back()}
+                      className="border-gray-200 dark:border-gray-800 rounded-xl"
               disabled={transferMutation.isPending}
-            >
-              Back
-            </Button>
-            <Button
+                    >
+                      Back
+                    </Button>
+                    <Button
               type="button"
               onClick={handleConfirm}
               className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl min-w-[150px]"
               disabled={!canConfirm}
-            >
-              {transferMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Confirm Transfer'
-              )}
-            </Button>
+                    >
+                      {transferMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        'Confirm Transfer'
+                      )}
+                    </Button>
           </div>
         </div>
 

@@ -229,7 +229,7 @@ export default function RecipientPage() {
   const onSubmit = (data: RecipientFormData) => {
     if (isLoadingSender || senderError || !senderDetails?.data) {
         toast.error("Sender details are not loaded or contain errors. Cannot proceed.");
-        return;
+      return;
     }
 
     if (!localInvoiceFile || !form.getValues('invoice')) {

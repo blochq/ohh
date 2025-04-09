@@ -3,10 +3,23 @@
 import { ICollectionAccount, IConversion, IExchangeRateResponse, IVerifyPaymentResponse, IBeneficiary } from '@/lib/models';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-
+// Define interface for Intermediary Details
+export interface IIntermediaryBankAddress {
+    street: string | undefined;
+    house_number: string | undefined;
+    city: string | undefined;
+    state: string | undefined;
+    country: string | undefined;
+}
+export interface IIntermediaryDetails {
+    intermediary_bank_name: string | undefined;
+    intermediary_account_number: string | undefined;
+    intermediary_account_swift_code: string | undefined;
+    intermediary_address: string | undefined;
+    intermediary_bank_address: IIntermediaryBankAddress | undefined;
+}
 
 interface PaymentContextType {
- 
   conversionData: IConversion | null;
   setConversionData: (data: IConversion | null) => void;
   
@@ -47,6 +60,8 @@ interface PaymentContextType {
   setInvoiceFile: (file: File | null) => void;
   narration: string | null;
   setNarration: (narration: string | null) => void;
+  intermediaryDetails: IIntermediaryDetails | null;
+  setIntermediaryDetails: (details: IIntermediaryDetails | null) => void;
 }
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
@@ -78,6 +93,7 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const [invoiceBase64, setInvoiceBase64] = useState<string | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [narration, setNarration] = useState<string | null>(null);
+  const [intermediaryDetails, setIntermediaryDetails] = useState<IIntermediaryDetails | null>(null);
   
   const updateActivity = () => {
     setLastActivityTime(Date.now());
@@ -96,6 +112,7 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     setSelectedBeneficiary(null);
     setDestinationCountry(null);
     setSelectedCurrency(null);
+    setIntermediaryDetails(null);
   };
   
   return (
@@ -128,6 +145,8 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         setInvoiceFile,
         narration,
         setNarration,
+        intermediaryDetails,
+        setIntermediaryDetails,
       }}
     >
       {children}
