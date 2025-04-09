@@ -37,13 +37,26 @@ export const useSession = () => useContext(SessionContext);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userType, setUserType] = useState<'user' | 'customer' | 'owner' | null>(null);
+  
+  // Get initial values from sessionStorage for client-side rendering
+  const initialValues = typeof window !== 'undefined' ? {
+    token: sessionStorage.getItem('token'),
+    type: sessionStorage.getItem('userType') as 'user' | 'customer' | 'owner' | null,
+    userName: sessionStorage.getItem('userName')
+  } : {
+    token: null,
+    type: null,
+    userName: null
+  };
+
+  // Initialize state with values from sessionStorage
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!initialValues.token);
+  const [userType, setUserType] = useState<'user' | 'customer' | 'owner' | null>(initialValues.type);
   const [shouldRefetch, setShouldRefetch] = useState<number>(0);
-  const [userName, setUserName] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(initialValues.userName);
 
   const getSessionInfo = () => {
-    if (typeof window === 'undefined') return { token: null, type: null, userId: null };
+    if (typeof window === 'undefined') return { token: null, type: null, userId: null, userName: null };
     
     const token = sessionStorage.getItem('token');
     const type = sessionStorage.getItem('userType');
@@ -60,10 +73,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   
   useEffect(() => {
+    // Re-sync with sessionStorage (handles cases where sessionStorage changes)
     const { token, type, userName } = getSessionInfo();
     setIsAuthenticated(!!token);
     setUserType(type as 'user' | 'customer' | 'owner' | null);
-    setUserName(userName || null);
+    setUserName(userName);
   }, []);
 
 

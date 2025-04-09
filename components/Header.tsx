@@ -17,6 +17,9 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const isAuthPage = pathname.startsWith('/auth');
   const { userName } = useSession();
   
+  // Display a placeholder when userName is not available
+  const displayName = userName || 'Guest';
+  
   return (
     <header className={twMerge("relative z-10", className)}>
       <div className="mx-auto px-4 py-3 max-w-7xl backdrop-blur-sm bg-white/70 dark:bg-black/70 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
@@ -91,7 +94,9 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
             
             {!isAuthPage && (
               <div className="hidden md:flex items-center mr-4">
-                <div className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 mr-4">Welcome, {userName}</div>
+                <div className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 mr-4">
+                  Welcome, {displayName}
+                </div>
                 <Link 
                   href="/auth/login" 
                   className="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
@@ -159,7 +164,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           
           <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl">
             <p className="text-sm text-gray-500 dark:text-gray-400">Logged in as</p>
-            <p className="font-medium text-black dark:text-white">{userName}</p>
+            <p className="font-medium text-black dark:text-white">{displayName}</p>
           </div>
           
           <nav className="space-y-1">
