@@ -121,7 +121,7 @@ export default function ConfirmationPage() {
       const reference = data.data.provider_ref
       toast.success(`Transfer initiated successfully! Reference: ${reference}`);
       clearPaymentData();
-      router.push('/transactions');
+      router.push(`/transaction-status?ref=${reference}`);
     },
     onError: (error: Error) => {
       setError(error.message || 'An unexpected error occurred during transfer.');
@@ -145,7 +145,7 @@ export default function ConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black relative overflow-hidden">
-      {/* Background pattern */}
+     
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-gray-100 dark:bg-gray-900 opacity-30 rounded-full blur-3xl"></div>
         <div className="absolute top-[50%] right-[20%] w-[30%] h-[30%] bg-gray-200 dark:bg-gray-800 opacity-30 rounded-full blur-3xl"></div>

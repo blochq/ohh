@@ -93,6 +93,9 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     setInvoiceBase64(null);
     setInvoiceFile(null);
     setNarration(null);
+    setSelectedBeneficiary(null);
+    setDestinationCountry(null);
+    setSelectedCurrency(null);
   };
   
   return (

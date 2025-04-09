@@ -106,7 +106,7 @@ export default function LoginPage() {
             Sign in with email
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-           Make International Payments with ease
+           Make International Payouts with ease
           </p>
         </div>
         

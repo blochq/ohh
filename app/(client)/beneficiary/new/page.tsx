@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { createBeneficiary, getSupportedCurrencies, getSupportedCountries } from '@/lib/api-calls';
-import { createBeneficiarySchema, getRequiredFieldsByCurrency, getSupportedCurrenciesSchema, getSupportedCountriesSchema } from '@/lib/dto';
+import { createBeneficiarySchema, getSupportedCurrenciesSchema, getSupportedCountriesSchema } from '@/lib/dto';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { getAuthToken } from '@/lib/helper-function';
@@ -46,7 +46,6 @@ export default function NewBeneficiaryPage() {
   const token = getAuthToken();
   const [supportedCountries, setSupportedCountries] = useState<ISupportedCountry[]>([]);
   const [supportedCurrencies, setSupportedCurrencies] = useState<ISupportedCurrency[]>([]);
-  const [requiredFields, setRequiredFields] = useState<string[]>([]);
   const { 
     selectedCurrency: contextCurrency, 
     destinationCountry: contextCountry, 
@@ -71,38 +70,22 @@ export default function NewBeneficiaryPage() {
       payout_method: 'Wallet',
       routing_code_type1: '',
       routing_code_value1: '',
+      beneficiary_bank_name: '',
+      beneficiary_bank_address: {
+          street: '',
+          house_number: '',
+          city: '',
+          state: '',
+          country: ''
+      },
       beneficiary_country_code: '',
-      beneficiary_bank_account_type: '',
-      beneficiary_bank_code: '',
       beneficiary_email: '',
       beneficiary_contact_number: '',
+      beneficiary_bank_account_type: '',
       routing_code_type2: '',
       routing_code_value2: '',
     },
   });
-
-  const isFieldRequired = (fieldName: keyof BeneficiaryFormData): boolean => {
-    return requiredFields.includes(fieldName);
-  };
-
-  useEffect(() => {
-    const currency = form.watch('currency');
-    if (currency) {
-      form.setValue('destination_currency', currency);
-      const fields = getRequiredFieldsByCurrency(currency);
-      setRequiredFields(fields);
-    } else {
-      setRequiredFields([]);
-    }
-  }, [form.watch('currency'), form.setValue]);
-
-  useEffect(() => {
-    const initialCurrency = form.getValues('currency');
-    if (initialCurrency) {
-      const fields = getRequiredFieldsByCurrency(initialCurrency);
-      setRequiredFields(fields);
-    }
-  }, []);
 
   const createBeneficiaryMutation = useMutation({
     mutationFn: async (data: BeneficiaryFormData) => {
@@ -113,13 +96,15 @@ export default function NewBeneficiaryPage() {
       const response = await createBeneficiary(input);
       
       if (response.error) {
-        throw new Error(response.error.message);
-      }
-      if (response.validationErrors && response.validationErrors.length > 0) {
-        throw new Error(response.validationErrors[0].message);
+        if(response.validationErrors && response.validationErrors.length > 0) {
+            const errorMessages = response.validationErrors.map(err => `${err.field}: ${err.message}`).join('; ');
+            throw new Error(`Validation failed: ${errorMessages}`);
+        } else {
+            throw new Error((response.error as Error).message || 'Failed to create beneficiary.');
+        }
       }
       if (!response.data?.data) {
-        throw new Error('Beneficiary data not found in response');
+           throw new Error("Beneficiary created but data not received.");
       }
       return response.data.data as IBeneficiary;
     },
@@ -135,7 +120,7 @@ export default function NewBeneficiaryPage() {
     },
     onError: (error: Error) => {
       setError(error.message);
-      toast.error('Failed to create beneficiary');
+      toast.error(`Failed: ${error.message}`);
     },
   });
 
@@ -242,418 +227,371 @@ export default function NewBeneficiaryPage() {
           <div className="p-6 pt-0">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <section className="space-y-6">
+                   <h3 className="text-lg font-semibold pt-4 border-t border-gray-200 dark:border-gray-700">Beneficiary Identity</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="currency" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel className="text-black dark:text-white">Currency</FormLabel>
+                              <FormControl>
+                                <Select 
+                                  onValueChange={field.onChange} 
+                                  defaultValue={field.value}
+                                  disabled={cameFromPaymentFlow}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="border-gray-200 dark:border-gray-800">
+                                      <SelectValue placeholder="Select currency" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {supportedCurrencies.map((currency) => (
+                                      <SelectItem key={currency._id} value={currency.currency}>
+                                        {currency.currency}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}/>
+                      
+                      <FormField control={form.control} name="beneficiary_name" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-black dark:text-white">Beneficiary Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter full name" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                      )}/>
+                      
+                      <FormField control={form.control} name="beneficiary_account_type" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Account Type</FormLabel>
+                               <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="border-gray-200 dark:border-gray-800">
+                                      <SelectValue placeholder="Select account type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="personal">Personal</SelectItem>
+                                    <SelectItem value="business">Business</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                      )}/>
+                      
+                      <FormField control={form.control} name="beneficiary_email" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Email</FormLabel>
+                               <FormControl>
+                                <Input placeholder="Enter email" type="email" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                      )}/>
+                      
+                      <FormField control={form.control} name="beneficiary_contact_number" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Contact Number</FormLabel>
+                               <FormControl>
+                                <Input placeholder="Enter contact number" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                      )}/>
+                    </div>
+                </section>
+
+                <section className="space-y-6">
+                    <h3 className="text-lg font-semibold pt-4 border-t border-gray-200 dark:border-gray-700">Beneficiary Location</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="destination_country" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-black dark:text-white">Destination Country</FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    onValueChange={field.onChange} 
+                                    defaultValue={field.value}
+                                    disabled={cameFromPaymentFlow}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="border-gray-200 dark:border-gray-800">
+                                        <SelectValue placeholder="Select country" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {supportedCountries.map((country) => (
+                                        <SelectItem key={country.code} value={country.code}>
+                                          {country.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+
+                        <FormField control={form.control} name="beneficiary_address" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-black dark:text-white">Address</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter street address" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+
+                        <FormField control={form.control} name="beneficiary_city" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">City</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter city" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+
+                        <FormField control={form.control} name="beneficiary_state" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">State / Province</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter state / province" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                        
+                        <FormField control={form.control} name="beneficiary_postcode" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Postcode / Zip</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter postcode / zip" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                        
+                        <FormField control={form.control} name="beneficiary_country_code" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Country Code (e.g., US)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter 2-letter country code" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                    </div>
+                </section>
                 
-                  <FormField
-                    control={form.control}
-                    name="currency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">Currency *</FormLabel>
-                        <FormControl>
-                          <Select 
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                            }} 
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select currency" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {supportedCurrencies.map((currency) => (
-                                <SelectItem key={currency._id} value={currency.currency}>
-                                  {currency.currency}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <section className="space-y-6">
+                    <h3 className="text-lg font-semibold pt-4 border-t border-gray-200 dark:border-gray-700">Beneficiary Bank Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <FormField control={form.control} name="beneficiary_account_number" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Account Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter account number" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                        
+                       <FormField control={form.control} name="beneficiary_bank_account_type" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Bank Account Type</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="border-gray-200 dark:border-gray-800">
+                                      <SelectValue placeholder="Select bank account type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="savings">Savings</SelectItem>
+                                    <SelectItem value="checking">Checking</SelectItem>
+                                    <SelectItem value="current">Current</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                        
+                        <FormField control={form.control} name="beneficiary_bank_name" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-black dark:text-white">Bank Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter bank name" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                        )}/>
+                        
+                        <FormField control={form.control} name="destination_currency" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel className="text-black dark:text-white">Destination Currency</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  readOnly
+                                  className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300 bg-gray-50 dark:bg-gray-800"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                        )}/>
 
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Beneficiary Name {isFieldRequired('beneficiary_name') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter full name" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <FormField control={form.control} name="payout_method" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel className="text-black dark:text-white">Payout Method</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="border-gray-200 dark:border-gray-800">
+                                      <SelectValue placeholder="Select payout method" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="Wallet">Wallet</SelectItem>
+                                    <SelectItem value="BankTransfer">Bank Transfer</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                        )}/>
 
-                  <FormField
-                    control={form.control}
-                    name="destination_country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Destination Country {isFieldRequired('destination_country') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select country" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {supportedCountries.map((country) => (
-                                <SelectItem key={country.code} value={country.code}>
-                                  {country.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <FormField control={form.control} name="routing_code_type1" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Routing Code Type</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="border-gray-200 dark:border-gray-800">
+                                      <SelectValue placeholder="Select routing code type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="aba">ABA (US)</SelectItem>
+                                    <SelectItem value="sort_code">Sort Code (UK)</SelectItem>
+                                    <SelectItem value="bic_swift">BIC/SWIFT</SelectItem>
+                                    <SelectItem value="ifsc">IFSC (India)</SelectItem>
+                                    <SelectItem value="bsb">BSB (Australia)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
 
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_country_code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Country Code {isFieldRequired('beneficiary_country_code') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter country code" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <FormField control={form.control} name="routing_code_value1" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Routing Code Value</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter routing code" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                        
+                        <FormField control={form.control} name="routing_code_type2" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Secondary Routing Type</FormLabel>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="border-gray-200 dark:border-gray-800">
+                                      <SelectValue placeholder="Select routing code type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="aba">ABA (US)</SelectItem>
+                                    <SelectItem value="sort_code">Sort Code (UK)</SelectItem>
+                                    <SelectItem value="bic_swift">BIC/SWIFT</SelectItem>
+                                    <SelectItem value="ifsc">IFSC (India)</SelectItem>
+                                    <SelectItem value="bsb">BSB (Australia)</SelectItem>
+                                    <SelectItem value="branch_code">Branch Code</SelectItem>
+                                    <SelectItem value="transit_number">Transit Number</SelectItem>
+                                    <SelectItem value="bank_code">Bank Code</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                        
+                        <FormField control={form.control} name="routing_code_value2" render={({ field }) => (
+                           <FormItem>
+                              <FormLabel className="text-black dark:text-white">Secondary Routing Value</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter routing code" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}/>
+                    </div>
+                </section>
 
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Address {isFieldRequired('beneficiary_address') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter address" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <section className="space-y-6">
+                    <h3 className="text-lg font-semibold pt-4 border-t border-gray-200 dark:border-gray-700">Beneficiary Bank Address (Optional)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="beneficiary_bank_address.street" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-black dark:text-white">Street</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter bank street" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="beneficiary_bank_address.house_number" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-black dark:text-white">House Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter house number" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="beneficiary_bank_address.city" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-black dark:text-white">City</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter bank city" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="beneficiary_bank_address.state" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-black dark:text-white">State / Province</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter bank state" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="beneficiary_bank_address.country" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-black dark:text-white">Country</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter bank country" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                        )}/>
+                    </div>
+                </section>
 
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          City {isFieldRequired('beneficiary_city') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter city" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          State {isFieldRequired('beneficiary_state') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter state" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_postcode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Postcode {isFieldRequired('beneficiary_postcode') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter postcode" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_account_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Account Number {isFieldRequired('beneficiary_account_number') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter account number" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_account_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Account Type {isFieldRequired('beneficiary_account_type') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select account type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="personal">Personal</SelectItem>
-                              <SelectItem value="business">Business</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_bank_account_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Bank Account Type {isFieldRequired('beneficiary_bank_account_type') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select bank account type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="savings">Savings</SelectItem>
-                              <SelectItem value="checking">Checking</SelectItem>
-                              <SelectItem value="current">Current</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_bank_code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Bank Code {isFieldRequired('beneficiary_bank_code') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter bank code" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Email {isFieldRequired('beneficiary_email') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter email" type="email" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="beneficiary_contact_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Contact Number {isFieldRequired('beneficiary_contact_number') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter contact number" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="destination_currency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Destination Currency {isFieldRequired('destination_currency') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input 
-                            readOnly
-                            className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300 bg-gray-50 dark:bg-gray-800"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="payout_method"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Payout Method {isFieldRequired('payout_method') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select payout method" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Wallet">Wallet</SelectItem>
-                              <SelectItem value="BankTransfer">Bank Transfer</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="routing_code_type1"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Routing Code Type {isFieldRequired('routing_code_type1') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select routing code type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="aba">ABA (US)</SelectItem>
-                              <SelectItem value="sort_code">Sort Code (UK)</SelectItem>
-                              <SelectItem value="bic_swift">BIC/SWIFT</SelectItem>
-                              <SelectItem value="ifsc">IFSC (India)</SelectItem>
-                              <SelectItem value="bsb">BSB (Australia)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="routing_code_value1"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Routing Code Value {isFieldRequired('routing_code_value1') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter routing code" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="routing_code_type2"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Secondary Routing Code Type {isFieldRequired('routing_code_type2') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 dark:border-gray-800">
-                                <SelectValue placeholder="Select routing code type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="branch_code">Branch Code</SelectItem>
-                              <SelectItem value="transit_number">Transit Number</SelectItem>
-                              <SelectItem value="bank_code">Bank Code</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="routing_code_value2"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-black dark:text-white">
-                          Secondary Routing Code Value {isFieldRequired('routing_code_value2') && '*'} 
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter routing code" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex justify-end space-x-4">
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <Button
                     type="button"
                     variant="outline"
@@ -664,13 +602,13 @@ export default function NewBeneficiaryPage() {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl"
+                    className="bg-black text-white dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 rounded-xl min-w-[150px]"
                     disabled={createBeneficiaryMutation.isPending}
                   >
                     {createBeneficiaryMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {cameFromPaymentFlow ? 'Saving...' : 'Creating...'}
+                        {cameFromPaymentFlow ? 'Saving & Continuing...' : 'Creating Beneficiary...'}
                       </>
                     ) : (
                       cameFromPaymentFlow ? 'Save & Continue' : 'Create Beneficiary'
@@ -682,15 +620,13 @@ export default function NewBeneficiaryPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border-l-4 border-t border-r border-b border-gray-200 dark:border-gray-800 border-l-gray-900 dark:border-l-white">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border-l-4 border-t border-r border-b border-gray-200 dark:border-gray-800 border-l-gray-900 dark:border-l-white mt-8">
           <div className="p-6 pb-4">
             <h2 className="text-lg font-bold text-black dark:text-white">Important Information</h2>
           </div>
           <div className="p-6 pt-0">
             <p className="text-gray-600 dark:text-gray-400">
-              Please ensure all information is accurate before submitting. 
-              Different currencies require different information for transfers.
-              Fields marked with * are required for the selected currency.
+              Please ensure all information is accurate. Incorrect details may lead to transfer delays or failures.
             </p>
           </div>
         </div>

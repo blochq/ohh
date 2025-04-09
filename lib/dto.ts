@@ -171,218 +171,34 @@ export type UpgradeTierFormData = z.infer<typeof upgradeTierSchema>;
 
 export const createBeneficiarySchema = z.object({
   currency: z.string().min(1, "Currency is required"),
-  // Always required fields
-  beneficiary_name: z.string().min(1, "Beneficiary name is required"),
   destination_country: z.string().min(1, "Destination country is required"),
-  beneficiary_account_type: z.string().min(1, "Account type is required"),
-  destination_currency: z.string().min(1, "Destination currency is required"),
-  payout_method: z.string().min(1, "Payout method is required"),
-  beneficiary_account_number: z.string().min(1, "Account number is required"),
-  
-  // Optional fields that might be required based on currency
+  beneficiary_name: z.string().min(1, "Beneficiary name is required"),
   beneficiary_address: z.string().optional(),
   beneficiary_city: z.string().optional(),
+  beneficiary_account_type: z.string().min(1, "Account type is required"),
   beneficiary_state: z.string().optional(),
   beneficiary_postcode: z.string().optional(),
+  beneficiary_account_number: z.string().min(1, "Account number is required"),
+  destination_currency: z.string().min(1, "Destination currency is required"),
+  payout_method: z.string().min(1, "Payout method is required"),
+  routing_code_type1: z.string().optional(),
+  routing_code_value1: z.string().optional(),
+  beneficiary_bank_name: z.string().optional(),
+  beneficiary_bank_address: z.object({
+      street: z.string().optional(),
+      house_number: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      country: z.string().optional(),
+  }).optional(),
   beneficiary_country_code: z.string().optional(),
-  beneficiary_bank_code: z.string().optional(),
   beneficiary_email: z.string().email("Invalid email").optional(),
   beneficiary_contact_number: z.string().optional(),
   beneficiary_bank_account_type: z.string().optional(),
-  routing_code_type1: z.string().optional(),
-  routing_code_value1: z.string().optional(),
   routing_code_type2: z.string().optional(),
   routing_code_value2: z.string().optional(),
   token: z.string(),
 });
-
-// Helper function to get required fields based on currency
-export const getRequiredFieldsByCurrency = (currency: string): string[] => {
-  switch (currency) {
-    case "USD":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_address",
-        "beneficiary_city",
-        "beneficiary_account_type",
-        "beneficiary_state",
-        "beneficiary_postcode",
-        "beneficiary_account_number",
-        "destination_currency",
-        "payout_method",
-        "routing_code_type1",
-        "routing_code_value1"
-      ];
-    case "EUR":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_country_code",
-        "beneficiary_account_type",
-        "beneficiary_account_number",
-        "destination_currency",
-        "payout_method",
-        "beneficiary_address",
-        "beneficiary_city",
-        "routing_code_type1",
-        "routing_code_value1"
-      ];
-    case "GBP":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_country_code",
-        "beneficiary_account_type",
-        "beneficiary_account_number",
-        "destination_currency",
-        "payout_method",
-        "routing_code_type1",
-        "routing_code_value1"
-      ];
-    case "CAD":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_address",
-        "beneficiary_city",
-        "beneficiary_state",
-        "beneficiary_postcode",
-        "beneficiary_country_code",
-        "beneficiary_account_type",
-        "beneficiary_account_number",
-        "beneficiary_bank_code",
-        "destination_currency",
-        "payout_method",
-        "routing_code_type1",
-        "routing_code_value1"
-      ];
-    case "ZAR":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_country_code",
-        "beneficiary_email",
-        "beneficiary_bank_account_type",
-        "beneficiary_account_type",
-        "beneficiary_contact_number",
-        "beneficiary_account_number",
-        "beneficiary_bank_code",
-        "destination_currency",
-        "payout_method"
-      ];
-    case "JPY":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_address",
-        "beneficiary_city",
-        "beneficiary_country_code",
-        "beneficiary_bank_account_type",
-        "beneficiary_account_type",
-        "beneficiary_account_number",
-        "destination_currency",
-        "payout_method",
-        "routing_code_type2",
-        "routing_code_value2"
-      ];
-    case "CNY":
-      return [
-        "destination_country",
-        "beneficiary_account_type",
-        "beneficiary_country_code",
-        "beneficiary_account_number",
-        "destination_currency",
-        "payout_method"
-      ];
-    case "CHF":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_address",
-        "beneficiary_city",
-        "beneficiary_country_code",
-        "beneficiary_account_type",
-        "beneficiary_account_number",
-        "routing_code_type1",
-        "routing_code_value1",
-        "destination_currency",
-        "payout_method"
-      ];
-    case "KRW":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_country_code",
-        "beneficiary_email",
-        "beneficiary_account_type",
-        "beneficiary_contact_number",
-        "beneficiary_account_number",
-        "beneficiary_bank_code",
-        "destination_currency",
-        "payout_method"
-      ];
-    case "AUD":
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_address",
-        "beneficiary_city",
-        "beneficiary_country_code",
-        "beneficiary_account_type",
-        "beneficiary_postcode",
-        "beneficiary_account_number",
-        "routing_code_type1",
-        "routing_code_value1",
-        "destination_currency",
-        "payout_method"
-      ];
-    case "NGN":
-      return [
-        "currency",
-        "beneficiary_account_number",
-        "beneficiary_bank_code"
-      ];
-    default:
-      return [
-        "destination_country",
-        "beneficiary_name",
-        "beneficiary_account_number",
-        "destination_currency",
-        "payout_method"
-      ];
-  }
-};
-
-export const getDynamicBeneficiaryValidation = (data: z.infer<typeof createBeneficiarySchema>, currency: string): boolean => {
-  const requiredFields = getRequiredFieldsByCurrency(currency);
-  
-
-  for (const field of requiredFields) {
-    if (field !== 'token' && field !== 'currency' && !data[field as keyof typeof data]) {
-      return false;
-    }
-  }
-  return true;
-};
-
-
-export const validateBeneficiaryForm = (data: z.infer<typeof createBeneficiarySchema>, currency: string): { valid: boolean, errors: Record<string, string> } => {
-  const requiredFields = getRequiredFieldsByCurrency(currency);
-  const errors: Record<string, string> = {};
-  
- 
-  requiredFields.forEach(field => {
-    if (field !== 'token' && field !== 'currency' && !data[field as keyof typeof data]) {
-      errors[field] = `${field.replace(/_/g, ' ')} is required for ${currency}`;
-    }
-  });
-  
-  return { 
-    valid: Object.keys(errors).length === 0,
-    errors
-  };
-};
 
 export type CreateBeneficiaryFormData = z.infer<typeof createBeneficiarySchema>;
 

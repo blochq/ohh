@@ -129,7 +129,7 @@ export default function Dashboard() {
     
         <div className="text-center space-y-4 mb-12">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black dark:text-white">
-            International Payments Made Easy
+            International Payouts Made Easy
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
             Send money across borders quickly and securely
