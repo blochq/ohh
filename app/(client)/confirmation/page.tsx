@@ -77,7 +77,7 @@ export default function ConfirmationPage() {
   useEffect(() => {
     if (!selectedBeneficiary || !conversionData || !sourceOfFunds || !purposeCode || !invoiceBase64) {
       toast.error("Missing required transfer details. Please start the process again.");
-      router.push('/payment');
+      router.push('/dashboard');
     }
   }, [selectedBeneficiary, conversionData, sourceOfFunds, purposeCode, invoiceBase64, router]);
 
@@ -121,7 +121,7 @@ export default function ConfirmationPage() {
       const reference = data.data.provider_ref
       toast.success(`Transfer initiated successfully! Reference: ${reference}`);
       clearPaymentData();
-      router.push(`/transaction-status?ref=${reference}`);
+      router.push(`/dashboard`);
     },
     onError: (error: Error) => {
       setError(error.message || 'An unexpected error occurred during transfer.');

@@ -396,7 +396,7 @@ export default function NewBeneficiaryPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                        <FormField control={form.control} name="beneficiary_account_number" render={({ field }) => (
                            <FormItem>
-                              <FormLabel className="text-black dark:text-white">Account Number</FormLabel>
+                              <FormLabel className="text-black dark:text-white">Account Number (IBAN)</FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter account number" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
                               </FormControl>
@@ -538,10 +538,9 @@ export default function NewBeneficiaryPage() {
                            </FormItem>
                         )}/>
                     </div>
-                </section>
+           
 
-                <section className="space-y-6">
-                    <h3 className="text-lg font-semibold pt-4 border-t border-gray-200 dark:border-gray-700">Beneficiary Bank Address (Optional)</h3>
+                
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField control={form.control} name="beneficiary_bank_address.street" render={({ field }) => (
                             <FormItem>
@@ -554,7 +553,7 @@ export default function NewBeneficiaryPage() {
                         )}/>
                         <FormField control={form.control} name="beneficiary_bank_address.house_number" render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-black dark:text-white">House Number</FormLabel>
+                              <FormLabel className="text-black dark:text-white">Postal Code</FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter house number" {...field} className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />
                               </FormControl>
@@ -589,7 +588,9 @@ export default function NewBeneficiaryPage() {
                             </FormItem>
                         )}/>
                     </div>
-                </section>
+           
+           
+               </section>
 
                 <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <Button
