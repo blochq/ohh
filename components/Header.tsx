@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const { userName } = useSession();
   
   // Display a placeholder when userName is not available
-  const displayName = userName || 'Guest';
+  const displayName = userName ? userName.split(' ')[0] : 'Guest';
   
   return (
     <header className={twMerge("relative z-10", className)}>

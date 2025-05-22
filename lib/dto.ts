@@ -289,6 +289,76 @@ export const getSenderDetailsSchema = z.object({
 
 export type GetSenderDetailsFormData = z.infer<typeof getSenderDetailsSchema>;
 
+// Schema for Stage One of Onboarding (Sign Up)
+export const signUpStageOneSchema = z.object({
+  FIRST_NAME: z.string().min(1, "First name is required"),
+  LAST_NAME: z.string().min(1, "Last name is required"),
+  EMAIL: z.string().min(1, "Email is required").email("Invalid email format"),
+  PHONE: z.string().optional(), // Assuming phone is optional based on typical sign-up forms
+  PASSWORD: z.string().min(8, "Password must be at least 8 characters"),
+  BUSINESS_NAME: z.string().min(1, "Business name is required"),
+});
+
+export type SignUpStageOneFormData = z.infer<typeof signUpStageOneSchema>;
+
+// Schema for Stage Two of Onboarding (KYB)
+export const kybSchema = z.object({
+  BUSINESS_TYPE: z.enum(["registered business", "starter business"], {
+    required_error: "Business type is required",
+  }),
+  BUSINESS_NAME: z.string().min(1, "Business name is required"),
+  BUSINESS_CATEGORY: z.string().min(1, "Business category is required"),
+  COUNTRY_OF_OPERATIONS: z.string().min(1, "Country of operations is required"),
+  INDUSTRY: z.string().min(1, "Industry is required"),
+  STATE: z.string().min(1, "State is required"),
+  CITY: z.string().min(1, "City is required"),
+  STREET: z.string().min(1, "Street is required"),
+  LEGAL_BUSINESS_NAME: z.string().min(1, "Legal business name is required"),
+  BUSINESS_REGISTRATION_TYPE: z.string().optional(), // Optional if starter business
+  BUSINESS_REGISTRATION_NUMBER: z.string().optional(), // Optional if starter business
+  TAX_IDENTIFICATION_NUMBER: z.string().optional(), // Optional
+  DIRECTOR_FIRST_NAME: z.string().min(1, "Director first name is required"),
+  LAST_NAME: z.string().min(1, "Director last name is required"), // Assuming this is Director's Last Name
+  NATIONALITY: z.string().min(1, "Director nationality is required"),
+  PHONE_NUMBER: z.string().min(1, "Director phone number is required"),
+  EMAIL: z.string().min(1, "Director email is required").email("Invalid email format"),
+  BVN: z.string().optional(), // Assuming BVN is optional or country-specific
+  DOB: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth must be YYYY-MM-DD"),
+  MEANS_OF_ID: z.string().min(1, "Means of ID is required"),
+  VALID_ID_NUMBER: z.string().min(1, "Valid ID number is required"),
+  token: z.string().min(1, "Auth token is required"), // Assuming a token is needed for this step
+});
+
+export type KybFormData = z.infer<typeof kybSchema>;
 
 
+
+
+export const getTransfiRatesSchema = z.object({
+  AMOUNT: z.number(),
+  CURRENCY: z.string(),
+  SETTLEMENT_CURRENCY: z.string(),
+  token: z.string(),
+});
+
+export type GetTransfiRatesFormData = z.infer<typeof getTransfiRatesSchema>;
+
+
+export const transfiPayinSchema = z.object({
+  AMOUNT: z.number(),
+  COUNTRY: z.string(),
+  CURRENCY: z.string(),
+  PAYMENT_TYPE: z.string(),
+  PURPOSE_CODE: z.string(),
+  token: z.string(),
+});
+
+export type TransfiPayinFormData = z.infer<typeof transfiPayinSchema>;
+
+export const getTransfiPaymentMethodsSchema = z.object({
+  token: z.string(),
+  currency: z.string(),
+});
+
+export type GetTransfiPaymentMethodsFormData = z.infer<typeof getTransfiPaymentMethodsSchema>;
 

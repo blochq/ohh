@@ -1,5 +1,5 @@
-import { collectionAccountSchema, createAccountSchema, createUserSchema, customerUpgradeSchema, exchangeRateSchema, getAllTransactionsSchema, getSingleCustomerSchema, getSingleTransactionSchema, getSingleUserSchema, getTransferFeeSchema, kycIdentitySchema, loginSchema, resolveAccountSchema, signupSchema, tokenSchema, transferSchema, upgradeTierSchema, verifyPaymentSchema, createBeneficiarySchema, getBeneficiaryByIdSchema, transferPayoutSchema, getSourceOfFundsSchema, getPurposeCodesSchema, getSupportedCurrenciesSchema, getSupportedCountriesSchema, getSenderDetailsSchema } from "./dto";
-import { IAccountResponse, IApiError, IApiResponse, IBankListResponse, ICollectionAccountResponse, ICreateUserResponse, ICustomerUpgradeResponse, IExchangeRateResponse, IKycIdentityResponse, ILoginResponse, IResolveAccountResponse, ITransferFeeResponse, ITransferResponse, ITransactionResponse, IUpgradeTierResponse, IValidationError, IVerifyPaymentResponse, IBeneficiaryResponse, IBeneficiariesResponse, ITransferPayoutResponse, ISourceOfFundsResponse, IPurposeCodesResponse, ISupportedCurrenciesResponse, ISupportedCountriesResponse, ISenderDetailsResponse } from "@/lib/models";
+import { collectionAccountSchema, createAccountSchema, createUserSchema, customerUpgradeSchema, exchangeRateSchema, getAllTransactionsSchema, getSingleCustomerSchema, getSingleTransactionSchema, getSingleUserSchema, getTransferFeeSchema, kycIdentitySchema, loginSchema, resolveAccountSchema, signupSchema, tokenSchema, transferSchema, upgradeTierSchema, verifyPaymentSchema, createBeneficiarySchema, getBeneficiaryByIdSchema, transferPayoutSchema, getSourceOfFundsSchema, getPurposeCodesSchema, getSupportedCurrenciesSchema, getSupportedCountriesSchema, getSenderDetailsSchema, signUpStageOneSchema, kybSchema, getTransfiRatesSchema, transfiPayinSchema, getTransfiPaymentMethodsSchema } from "./dto";
+import { IAccountResponse, IApiError, IApiResponse, IBankListResponse, ICollectionAccountResponse, ICreateUserResponse, ICustomerUpgradeResponse, IExchangeRateResponse, IKycIdentityResponse, ILoginResponse, IResolveAccountResponse, ITransferFeeResponse, ITransferResponse, ITransactionResponse, IUpgradeTierResponse, IValidationError, IVerifyPaymentResponse, IBeneficiaryResponse, IBeneficiariesResponse, ITransferPayoutResponse, ISourceOfFundsResponse, IPurposeCodesResponse, ISupportedCurrenciesResponse, ISupportedCountriesResponse, ISenderDetailsResponse, ISignUpStageOneResponse, ITransfiListCurrenciesResponse, ITransfiListPaymentMethodsResponse, ITransfiGetRatesResponse, ITransfiPayinResponse } from "@/lib/models";
 import { z } from "zod";
 
 
@@ -357,5 +357,69 @@ export const getSenderDetails = async (input: z.infer<typeof getSenderDetailsSch
       "Content-Type": "application/json",
       "Authorization": `Bearer ${input.token}`,
     },
+  }));
+};
+
+export const signUpStageOne = async (input: z.infer<typeof signUpStageOneSchema>): Promise<IApiResponse<ISignUpStageOneResponse>> => {
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_URL + "/auth/signUp", {
+    method: "POST",
+    body: JSON.stringify(input),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }));
+};
+
+export const submitKyb = async (input: z.infer<typeof kybSchema>): Promise<IApiResponse<IKybResponse>> => {
+  const { token, ...data } = input;
+  return handleApiCalls(await fetch(process.env.NEXT_PUBLIC_API_URL + "/docKYB", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`, 
+    },
+  }));
+};
+
+
+export const getTransfiCurrencies = async (input: z.infer<typeof tokenSchema>): Promise<IApiResponse<ITransfiListCurrenciesResponse>> => {
+  return handleApiCalls(await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onRamp/trans/list-currencies`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${input.token}`,
+    },
+  }));
+};
+
+export const getTransfiPaymentMethods = async (input: z.infer<typeof getTransfiPaymentMethodsSchema>): Promise<IApiResponse<ITransfiListPaymentMethodsResponse>> => {
+  return handleApiCalls(await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onRamp/trans/list-payment-methods/:${input.currency}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization":`Bearer ${input.token}`,
+    },
+  }));
+};
+
+
+export const getTransfiRates = async (input: z.infer<typeof getTransfiRatesSchema>): Promise<IApiResponse<ITransfiGetRatesResponse> > => {
+  return handleApiCalls(await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onRamp/trans/get-rates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 
+      'Authorization': `Bearer ${input.token}` },
+    body: JSON.stringify(input),
+  }));
+};
+
+export const transfiPayin = async (input: z.infer<typeof transfiPayinSchema>): Promise<IApiResponse<ITransfiPayinResponse>> => {
+  return handleApiCalls(await fetch(`${process.env.NEXT_PUBLIC_API_URL}/onRamp/trans/payin`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Authorization': `Bearer ${input.token}` 
+    },
+    body: JSON.stringify(input),
   }));
 };

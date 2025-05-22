@@ -27,14 +27,11 @@ import { ICollectionAccount } from '@/lib/models';
 export default function CollectionAccountPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(5 * 60 * 1000); 
-
  
   const {
     conversionData,
     accountData,
     setAccountData,
-    lastActivityTime,
     updateActivity
   } = usePaymentContext();
   
@@ -42,17 +39,17 @@ export default function CollectionAccountPage() {
   useEffect(() => {
     const events = ['mousedown', 'keypress', 'scroll', 'touchstart'];
     
-    const resetTimer = () => {
+    const resetGeneralActivity = () => {
       updateActivity();
     };
     
     events.forEach(event => {
-      window.addEventListener(event, resetTimer);
+      window.addEventListener(event, resetGeneralActivity);
     });
     
     return () => {
       events.forEach(event => {
-        window.removeEventListener(event, resetTimer);
+        window.removeEventListener(event, resetGeneralActivity);
       });
     };
   }, [updateActivity]);
@@ -67,28 +64,6 @@ export default function CollectionAccountPage() {
   }, [router, conversionData]);
   
 
-  useEffect(() => {
-    const sessionCheckInterval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = now - lastActivityTime;
-      const remaining = Math.max(0, 5 * 60 * 1000 - elapsed);
-      
-      setSessionTimeLeft(remaining);
-      
-
-      if (remaining === 0) {
-        toast.error("Your session has expired");
-        clearInterval(sessionCheckInterval);
-        router.push('/');
-      }
-    }, 1000);
-    
-    return () => {
-      clearInterval(sessionCheckInterval);
-    };
-  }, [lastActivityTime, router]);
-  
- 
   const { data, isLoading } = useQuery<ICollectionAccount>({
     queryKey: ['collectionAccount', conversionData?.amount],
     queryFn: async () => {
@@ -155,13 +130,6 @@ export default function CollectionAccountPage() {
   };
   
 
-  const formatTimeLeft = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-black p-4">
@@ -182,12 +150,6 @@ export default function CollectionAccountPage() {
                   <CardTitle>Payment Details</CardTitle>
                   <CardDescription>Please wait while we prepare your payment details</CardDescription>
                 </div>
-                {sessionTimeLeft < 5 * 60 * 1000 && (
-                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <RefreshCw className="w-4 h-4 mr-1" />
-                    <span>Session: {formatTimeLeft(sessionTimeLeft)}</span>
-                  </div>
-                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-8">
@@ -224,7 +186,7 @@ export default function CollectionAccountPage() {
         
     
         
-        <Card className="border-gray-200 dark:border-gray-800">
+        <Card className=" shadow-xl hover:shadow-2xl transition-all duration-200 dark:bg-black">
           {displayAccountData && conversionData && (
             <div>
               <CardHeader>
@@ -233,12 +195,6 @@ export default function CollectionAccountPage() {
                     <CardTitle>Payment Summary</CardTitle>
                     <CardDescription>Review your payment details</CardDescription>
                   </div>
-                  {sessionTimeLeft < 5 * 60 * 1000 && (
-                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                      <RefreshCw className="w-4 h-4 mr-1" />
-                      <span>Session: {formatTimeLeft(sessionTimeLeft)}</span>
-                    </div>
-                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -348,7 +304,7 @@ export default function CollectionAccountPage() {
           )}
         </Card>
         
-        <Card className="border-l-4 border-gray-900 dark:border-white bg-gray-50 dark:bg-black">
+        <Card className=" shadow-xl hover:shadow-2xl transition-all duration-200 dark:bg-black">
           <CardHeader>
             <CardTitle className="text-lg">Important</CardTitle>
           </CardHeader>

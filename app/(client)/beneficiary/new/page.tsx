@@ -668,10 +668,10 @@ export default function NewBeneficiaryPage() {
                             </FormControl>
                        </FormItem>
                        <FormItem>
-                            <FormLabel className="text-black dark:text-white">Intermediary SWIFT/BIC</FormLabel>
+                            <FormLabel className="text-black dark:text-white">Intermediary Routing Code 1</FormLabel>
                             <FormControl>
                               <Input 
-                                placeholder="Enter intermediary SWIFT/BIC code" 
+                                placeholder="Enter intermediary routing code 1" 
                                 value={intermediarySwiftCode || ''}
                                 onChange={(e) => setIntermediarySwiftCode(e.target.value || undefined)}
                                 className="border-gray-200 dark:border-gray-800 focus-visible:ring-gray-950 dark:focus-visible:ring-gray-300" />

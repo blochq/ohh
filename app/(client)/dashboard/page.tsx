@@ -40,11 +40,13 @@ import { ITransaction } from '@/lib/models';
 import { formatCurrency, getAuthToken } from '@/lib/helper-function';
 
 export default function Dashboard() {
-  const { isAuthenticated } = useSession();
+  const { isAuthenticated, userName } = useSession();
   const [selectedTransaction, setSelectedTransaction] = useState<ITransaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const token = getAuthToken();
+
+  const displayName = userName || 'Guest';
 
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -127,6 +129,12 @@ export default function Dashboard() {
       
       <div className="max-w-5xl mx-auto p-6 space-y-8 relative z-10">
     
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-semibold text-black dark:text-white">
+            Welcome, {displayName}!
+          </h2>
+        </div>
+
         <div className="text-center space-y-4 mb-12">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black dark:text-white">
             International Payouts Made Easy

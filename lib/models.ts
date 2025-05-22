@@ -695,4 +695,157 @@ export interface ISenderDetailsResponse {
     message: string;
 }
 
+export interface ISignUpStageOneUserDetails {
+  _id: string;
+  created_at: string;
+  last_login: string;
+  updated_at: string;
+  email: string;
+  user_type: string;
+  full_name: string;
+  organization_id: string;
+  organizations: Array<{
+    organization_id: string;
+    organization_name: string;
+    role: string;
+    status: string;
+    permissions: Record<string, unknown>;
+    permission_configuration: {
+      seek_approval_from_users: {
+        user_id: string;
+      };
+    };
+  }>;
+  organization: {
+    _id: string;
+    name: string;
+    email: string;
+    created_at: string;
+    updated_at: string;
+    environment: string;
+    secret_key_live: string;
+    public_key_live: string;
+    secret_key_test: string;
+    public_key_test: string;
+    status: string;
+    business_address: string;
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      country: string;
+    };
+    enabled_provider: boolean;
+    rc_number: string;
+    entity_type: string;
+    created_by: string;
+    archived: boolean;
+    verified_kyb: boolean;
+    preference: {
+      settled_to_bank: boolean;
+    };
+    enabled_products: null | unknown;
+    distributor_id: string;
+  };
+  meta_data: null | unknown;
+  verified: boolean;
+  access_code: string;
+  operator_account_id: string;
+  operator_type: string;
+  accepted_terms: boolean;
+  guide: {
+    enabled_provider: boolean;
+  };
+  ip_address: string;
+  verified_mail: boolean;
+  distributor_name: string;
+  secure_pin: Record<string, unknown>;
+  has_pin: boolean;
+  device_token: string;
+}
 
+export interface ISignUpStageOneDetails {
+  _id: string;
+  created_at: string;
+  last_login: string;
+  updated_at: string;
+  email: string;
+  password: string;
+  userDetails: {
+    success: boolean;
+    data: ISignUpStageOneUserDetails;
+    message: string;
+    token: string;
+  };
+  __v: number;
+}
+
+export interface ISignUpStageOneResponse {
+  StatusCode: number;
+  Message: string;
+  Data: {
+    details: ISignUpStageOneDetails;
+  };
+}
+
+export interface ITransfiListCurrenciesResponse {
+  StatusCode: number;
+  Message: string;
+  Data: {
+    details: string[];
+  };
+}
+
+
+export interface ITransfiPaymentMethod {
+  paymentCode: string;
+  name: string;
+  minAmount: number;
+  maxAmount: number;
+  logoUrl: string;
+  paymentType: string;
+}
+
+export interface ITransfiListPaymentMethodsResponse {
+  StatusCode: number;
+  Message: string;
+  Data: {
+    details: ITransfiPaymentMethod[];
+  };
+}
+
+export interface ITransfiGetRatesRequest {
+  AMOUNT: number;
+  CURRENCY: string;
+  SETTLEMENT_CURRENCY: string;
+}
+
+export interface ITransfiGetRatesResponse {
+  StatusCode: number;
+  Message: string;
+  Data: {
+    details: {
+      fiatTicker: string;
+      fiatAmount: number;
+      withdrawAmount: number;
+      exchangeRate: number;
+      quoteId: string;
+      fees: {
+        processingFee: number;
+        partnerFee: number;
+        totalFee: number;
+      };
+    };
+  };
+}
+
+export interface ITransfiPayinResponse {
+  StatusCode: number;
+  Message: string;
+  Data: {
+    details: {
+      message: string;
+      code: string;
+    };
+  };
+}

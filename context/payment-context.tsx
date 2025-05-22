@@ -1,6 +1,6 @@
 'use client';
 
-import { ICollectionAccount, IConversion, IExchangeRateResponse, IVerifyPaymentResponse, IBeneficiary } from '@/lib/models';
+import { ICollectionAccount, IConversion, IExchangeRateResponse, IVerifyPaymentResponse, IBeneficiary, ITransfiPaymentMethod, ITransfiGetRatesResponse } from '@/lib/models';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Define interface for Intermediary Details
@@ -62,6 +62,13 @@ interface PaymentContextType {
   setNarration: (narration: string | null) => void;
   intermediaryDetails: IIntermediaryDetails | null;
   setIntermediaryDetails: (details: IIntermediaryDetails | null) => void;
+
+  transfiCurrency: string | null;
+  setTransfiCurrency: (currency: string | null) => void;
+  transfiPaymentMethod: ITransfiPaymentMethod | null;
+  setTransfiPaymentMethod: (method: ITransfiPaymentMethod | null) => void;
+  transfiQuote: ITransfiGetRatesResponse['Data']['details'] | null;
+  setTransfiQuote: (quote: ITransfiGetRatesResponse['Data']['details'] | null) => void;
 }
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
@@ -95,6 +102,10 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const [narration, setNarration] = useState<string | null>(null);
   const [intermediaryDetails, setIntermediaryDetails] = useState<IIntermediaryDetails | null>(null);
   
+  const [transfiCurrency, setTransfiCurrency] = useState<string | null>(null);
+  const [transfiPaymentMethod, setTransfiPaymentMethod] = useState<ITransfiPaymentMethod | null>(null);
+  const [transfiQuote, setTransfiQuote] = useState<ITransfiGetRatesResponse['Data']['details'] | null>(null);
+  
   const updateActivity = () => {
     setLastActivityTime(Date.now());
   };
@@ -113,6 +124,9 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
     setDestinationCountry(null);
     setSelectedCurrency(null);
     setIntermediaryDetails(null);
+    setTransfiCurrency(null);
+    setTransfiPaymentMethod(null);
+    setTransfiQuote(null);
   };
   
   return (
@@ -147,6 +161,12 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
         setNarration,
         intermediaryDetails,
         setIntermediaryDetails,
+        transfiCurrency,
+        setTransfiCurrency,
+        transfiPaymentMethod,
+        setTransfiPaymentMethod,
+        transfiQuote,
+        setTransfiQuote,
       }}
     >
       {children}
